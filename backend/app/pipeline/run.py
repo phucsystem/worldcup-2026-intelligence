@@ -67,6 +67,18 @@ def run_pipeline(target_date: date) -> int:
 
     log.info("Starting pipeline run %s for %s", run_id, target_date)
 
+    # Fetch fresh data first (collect → brief). Non-fatal: on a missing API key
+    # or transient fetch failure we proceed with existing DB data rather than
+    # skipping the brief entirely.
+    from app.data.collect import run as collect_run
+
+    try:
+        rc = collect_run(target_date)
+        if rc != 0:
+            log.warning("Collector returned %d for %s — proceeding with existing DB data", rc, target_date)
+    except Exception as exc:
+        log.warning("Collector raised (%s) — proceeding with existing DB data", exc)
+
     try:
         graph = build_graph()
         # Per-node retry inside each node handles transient LLM errors.

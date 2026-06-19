@@ -48,3 +48,13 @@ def seed(session: Session) -> None:
     """Upsert the group structure skeleton into the standings table."""
     rows = _zeroed_rows()
     upsert_standings_snapshot(session, SEED_DATE, rows)
+
+
+if __name__ == "__main__":
+    from app.data.repository import make_engine, make_session_factory
+
+    session_factory = make_session_factory(make_engine())
+    with session_factory() as s:
+        seed(s)
+        s.commit()
+    print(f"seeded WC2026 group structure ({len(GROUPS)} groups)")
