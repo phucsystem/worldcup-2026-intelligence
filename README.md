@@ -55,11 +55,42 @@ npm run dev
 # http://localhost:3000
 ```
 
-### 6. Full stack via Docker Compose
+### 6. Full stack via Docker Compose (one command)
+
+Runs the entire stack — Postgres, migrations + seed, the API, and the SSR frontend:
 
 ```bash
-docker compose up
-# Migrations must be applied manually (step 3) — not auto-run in compose
+docker compose up --build
+```
+
+Service startup is ordered automatically:
+`postgres` (healthcheck) → `migrate` (alembic upgrade + seed the 12-group skeleton, then exits) → `backend` (healthcheck) → `frontend`.
+
+Then open:
+- Frontend: http://localhost:3000
+- API: http://localhost:8000/health · http://localhost:8000/api/standings
+
+The frontend (SSR) reaches the API over the compose network via `API_BASE=http://backend:8000` — no host config needed.
+
+**Optional API keys** (for live data + brief generation): create `.env` at the repo root with `API_FOOTBALL_KEY` and `DEEPSEEK_API_KEY`; compose passes them to the `backend` service. Without them, the site still runs and shows the seeded standings (briefs list stays empty).
+
+**Generate a brief inside the running stack:**
+
+```bash
+# Fetches fresh data (collector) AND generates the brief in one step.
+docker compose exec backend python -m app.pipeline.run --date 2026-06-19
+```
+
+`pipeline.run` (and the scheduled job) runs the collector first, then the brief. If the API key is missing or the fetch fails, it logs a warning and proceeds with whatever data is already in the DB rather than skipping the brief. To backfill data without generating a brief, run the collector alone:
+
+```bash
+docker compose exec backend python -m app.data.collect --date 2026-06-19
+```
+
+Reset everything (including the DB volume):
+
+```bash
+docker compose down -v
 ```
 
 ## Tests
