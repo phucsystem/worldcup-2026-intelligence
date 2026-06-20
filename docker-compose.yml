@@ -58,6 +58,32 @@ services:
       retries: 12
       start_period: 15s
 
+  # Periodic refresh: collect latest data + regenerate the brief on an interval
+  # (default 30 min). Each run prunes stale fixtures, recomputes standings, and
+  # republishes the brief for today (BRIEF_TIMEZONE). Reuses the backend image.
+  scheduler:
+    build:
+      context: backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg://wc:wc@postgres:5432/worldcup
+      API_FOOTBALL_KEY: ${API_FOOTBALL_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      BRIEF_TIMEZONE: ${BRIEF_TIMEZONE:-Australia/Melbourne}
+      API_FOOTBALL_LEAGUE: ${API_FOOTBALL_LEAGUE:-1}
+      API_FOOTBALL_SEASON: ${API_FOOTBALL_SEASON:-2026}
+      SCHEDULER_INTERVAL_SECONDS: ${SCHEDULER_INTERVAL_SECONDS:-1800}
+    depends_on:
+      backend:
+        condition: service_healthy
+    # Loop forever: run the full pipeline (collect -> brief) then sleep. A failed
+    # run is non-fatal (|| true) so transient API/LLM errors never kill the loop.
+    command:
+      - sh
+      - -c
+      - 'while true; do python -m app.pipeline.run || true; sleep "${SCHEDULER_INTERVAL_SECONDS:-1800}"; done'
+    restart: unless-stopped
+
   frontend:
     build:
       context: frontend

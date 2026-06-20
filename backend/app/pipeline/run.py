@@ -144,11 +144,23 @@ def run_pipeline(target_date: date) -> int:
 run = run_pipeline
 
 
+def _today_in_brief_tz() -> date:
+    from zoneinfo import ZoneInfo
+    from app.config import settings
+    return datetime.now(tz=ZoneInfo(settings.BRIEF_TIMEZONE)).date()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run WC 2026 brief pipeline for a date")
-    parser.add_argument("--date", required=True, type=_parse_date, help="YYYY-MM-DD")
+    parser.add_argument(
+        "--date",
+        type=_parse_date,
+        default=None,
+        help="YYYY-MM-DD (defaults to today in BRIEF_TIMEZONE)",
+    )
     args = parser.parse_args()
-    sys.exit(run_pipeline(args.date))
+    target = args.date or _today_in_brief_tz()
+    sys.exit(run_pipeline(target))
 
 
 if __name__ == "__main__":

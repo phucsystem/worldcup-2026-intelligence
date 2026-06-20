@@ -111,6 +111,21 @@ def make_session_factory(engine=None) -> sessionmaker:
     return sessionmaker(bind=engine)
 
 
+def prune_matches_not_in(session: Session, keep_fixture_ids: list[int]) -> int:
+    """Delete match rows whose fixture_id is not in the current fetch.
+
+    Keeps the table scoped to the active season/league so stale data from a
+    previous season config (e.g. a prior 2022 collect) can never linger and
+    leak into standings or the brief. Returns the number of rows removed."""
+    if not keep_fixture_ids:
+        return 0
+    result = session.execute(
+        matches_table.delete().where(matches_table.c.fixture_id.notin_(keep_fixture_ids))
+    )
+    session.commit()
+    return result.rowcount or 0
+
+
 def upsert_matches(session: Session, matches: list[Match]) -> None:
     if not matches:
         return

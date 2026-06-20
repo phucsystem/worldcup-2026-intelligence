@@ -18,6 +18,7 @@ from app.config import settings
 from app.data.api_football import APIFootballClient
 from app.data.repository import (
     make_session_factory,
+    prune_matches_not_in,
     upsert_matches,
     upsert_standings_snapshot,
     upsert_teams,
@@ -85,7 +86,10 @@ def run(target_date: date) -> int:
     with session_factory() as session:
         try:
             upsert_matches(session, matches)
-            log.info("Upserted %d matches", len(matches))
+            # Drop any match not in the current fetch (e.g. a prior season's
+            # rows) so the DB always reflects only the active tournament.
+            removed = prune_matches_not_in(session, [m.fixture_id for m in matches])
+            log.info("Upserted %d matches (pruned %d stale)", len(matches), removed)
         except Exception as exc:
             log.error("Failed to upsert matches: %s", exc)
             return 1
