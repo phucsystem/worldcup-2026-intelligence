@@ -43,11 +43,12 @@ def _map_fixture(raw: dict) -> Match:
     home_score = _parse_score(goals.get("home")) if in_play_or_done else None
     away_score = _parse_score(goals.get("away")) if in_play_or_done else None
 
-    league = raw.get("league", {})
-
     return Match(
         fixture_id=fixture.get("id", 0),
-        group_name=league.get("round"),
+        # group_name is assigned by the collector from the standings team->group
+        # map; the fixtures `league.round` is the matchday ("Group Stage - 1"),
+        # NOT the group (A–L), so it must not be used here.
+        group_name=None,
         home_team=teams.get("home", {}).get("name"),
         away_team=teams.get("away", {}).get("name"),
         home_score=home_score,
@@ -55,6 +56,7 @@ def _map_fixture(raw: dict) -> Match:
         status=status,
         kickoff_utc=kickoff_utc,
         events=None,
+        stage=raw.get("league", {}).get("round"),
     )
 
 
@@ -82,11 +84,11 @@ def _map_standing_row(raw: dict, group_name: str) -> StandingRow:
 class APIFootballClient(DataSource):
     def __init__(
         self,
-        league_id: int = WC_LEAGUE_ID,
-        season: int = WC_SEASON,
+        league_id: int | None = None,
+        season: int | None = None,
     ) -> None:
-        self._league_id = league_id
-        self._season = season
+        self._league_id = league_id if league_id is not None else settings.API_FOOTBALL_LEAGUE
+        self._season = season if season is not None else settings.API_FOOTBALL_SEASON
         self._base_url = settings.API_FOOTBALL_BASE_URL
         self._headers = {
             "x-apisports-key": settings.API_FOOTBALL_KEY or "",
@@ -96,19 +98,31 @@ class APIFootballClient(DataSource):
         with httpx.Client(base_url=self._base_url, headers=self._headers, timeout=15) as client:
             resp = client.get(path, params=params)
             resp.raise_for_status()
-            return resp.json()
+            data = resp.json()
+        # API-Football returns HTTP 200 with a populated `errors` object on
+        # plan/quota/parameter problems — surface it instead of silently
+        # returning an empty response (e.g. "Free plans do not have access...").
+        errors = data.get("errors")
+        if errors:
+            raise RuntimeError(f"API-Football error for {path}: {errors}")
+        return data
 
-    def get_fixtures(self, date_from: date, date_to: date) -> list[Match]:
-        data = self._get(
-            "/fixtures",
-            {
-                "league": self._league_id,
-                "season": self._season,
-                "from": date_from.isoformat(),
-                "to": date_to.isoformat(),
-            },
-        )
+    def get_fixtures(self, date_from: date | None = None, date_to: date | None = None) -> list[Match]:
+        """Fetch fixtures. With no date window, returns ALL fixtures for the
+        league+season (the tournament-to-date set used to compute standings)."""
+        params: dict = {"league": self._league_id, "season": self._season}
+        if date_from:
+            params["from"] = date_from.isoformat()
+        if date_to:
+            params["to"] = date_to.isoformat()
+        data = self._get("/fixtures", params)
         return [_map_fixture(r) for r in data.get("response", [])]
+
+    def team_group_map(self) -> dict[str, str]:
+        """team name -> group name ('Group A'…), sourced from the standings
+        endpoint. Group membership is structural metadata; the table NUMBERS are
+        still computed deterministically in Python from match results."""
+        return {row.team: row.group_name for row in self.get_standings() if row.team}
 
     def get_standings(self) -> list[StandingRow]:
         data = self._get(

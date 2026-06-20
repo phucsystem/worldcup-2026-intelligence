@@ -131,6 +131,11 @@ def upsert_standings_snapshot(
 ) -> None:
     if not rows:
         return
+    # Replace the whole snapshot so stale rows (e.g. teams no longer in a group)
+    # never linger when group membership changes between runs.
+    session.execute(
+        standings_table.delete().where(standings_table.c.snapshot_date == snapshot_date)
+    )
     for row in rows:
         stmt = (
             pg_insert(standings_table)

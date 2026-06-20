@@ -13,6 +13,10 @@ class Match(BaseModel):
     status: Optional[str]
     kickoff_utc: Optional[datetime]
     events: Optional[list[dict]] = None
+    # Raw competition round, e.g. "Group Stage - 1" or "Round of 16". Used to
+    # distinguish group-stage matches (which count toward group tables) from
+    # knockout matches. Not persisted.
+    stage: Optional[str] = None
 
 
 class StandingRow(BaseModel):

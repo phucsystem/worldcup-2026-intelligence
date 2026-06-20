@@ -117,7 +117,10 @@ def qualification_status(all_group_tables: dict[str, list[StandingRow]]) -> dict
         overtake them is 'qualified'; a team that cannot reach 3rd is
         'eliminated'; otherwise 'contention'.
     """
-    qualified_thirds = set(rank_best_thirds(all_group_tables))
+    # Best-thirds advancement is specific to the WC 2026 format (12 groups → 8
+    # best thirds). For other formats (e.g. the 8-group 2022 WC) only the top 2
+    # per group advance, so the best-thirds set is empty.
+    qualified_thirds = set(rank_best_thirds(all_group_tables)) if len(all_group_tables) == 12 else set()
     result: dict[str, str] = {}
 
     for group_name, rows in all_group_tables.items():

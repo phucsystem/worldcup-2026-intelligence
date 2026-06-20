@@ -36,17 +36,27 @@ def run(target_date: date) -> int:
     session_factory = make_session_factory()
 
     try:
-        log.info("Fetching fixtures for %s", target_date)
-        matches = client.get_fixtures(date_from=target_date, date_to=target_date)
-        log.info("Fetched %d fixtures", len(matches))
+        # Group membership comes from the standings endpoint (structural);
+        # the table numbers below are still computed in Python from results.
+        log.info("Fetching team->group map + fixtures (league=%s season=%s)",
+                 client._league_id, client._season)
+        team_group = client.team_group_map()
+        # Fetch the full tournament-to-date fixture set (not just one day) so the
+        # computed standings snapshot is cumulative and correct, not single-day.
+        matches = client.get_fixtures()
+        log.info("Fetched %d fixtures, %d teams mapped to groups", len(matches), len(team_group))
     except Exception as exc:
-        log.error("Failed to fetch fixtures: %s", exc)
+        log.error("Failed to fetch data: %s", exc)
         return 1
 
-    # Group matches by group_name and compute deterministic tables.
-    # API standings are intentionally not used for persistence: the computed
-    # tables are derived from actual match results via standings_math, ensuring
-    # the standings page and the daily brief always agree.
+    # Assign each GROUP-STAGE match its real group (A–L) via the team->group
+    # map. Knockout matches (Round of 16, etc.) keep group_name=None so they are
+    # persisted but never counted toward group standings.
+    for m in matches:
+        if m.stage and m.stage.lower().startswith("group"):
+            m.group_name = team_group.get(m.home_team) or team_group.get(m.away_team)
+
+    # Compute deterministic tables per group from actual results.
     by_group: dict[str, list] = defaultdict(list)
     for m in matches:
         if m.group_name:
