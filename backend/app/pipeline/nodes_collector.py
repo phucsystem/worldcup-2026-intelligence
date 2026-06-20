@@ -10,9 +10,12 @@ from app.data.models import Match, StandingRow
 from app.data.standings_math import (
     apply_position_deltas,
     compute_group_table,
+    group_scenarios,
     qualification_status,
     rank_best_thirds,
 )
+
+_STAKE_GROUPS_CAP = 4  # home-page "What's at stake" shows up to 4 contention groups
 from app.pipeline.state import BriefState
 
 
@@ -106,6 +109,35 @@ def _build_facts(
     # Limit upcoming to next 8 to keep prompt bounded
     upcoming_sorted = sorted(upcoming, key=lambda m: m.kickoff_utc or datetime.max.replace(tzinfo=timezone.utc))[:8]
 
+    # Candidate contention groups for the "What's at stake" cards: drop groups
+    # that are fully decided (complete AND no team still in contention), rank the
+    # rest by soonest upcoming fixture, cap at 4. The LLM narrates these; the
+    # per-team `rows` notes are deterministic.
+    _far = datetime.max.replace(tzinfo=timezone.utc)
+    scenarios = group_scenarios(group_tables)
+    stake_candidates: list[dict] = []
+    for gname, rows in scenarios.items():
+        group_rows = group_tables[gname]
+        complete = all(r.played >= 3 for r in group_rows)
+        has_contention = any(sr["status"] == "contention" for sr in rows)
+        if complete and not has_contention:
+            continue
+        soonest = min(
+            (m.kickoff_utc for m in upcoming if m.group_name == gname and m.kickoff_utc),
+            default=None,
+        )
+        stake_candidates.append({
+            "group_name": gname,
+            "rows": rows,
+            "next_kickoff_utc": soonest.isoformat() if soonest else None,
+            "_sort": soonest or _far,
+        })
+    stake_candidates.sort(key=lambda c: c["_sort"])
+    stake_groups = [
+        {k: v for k, v in c.items() if k != "_sort"}
+        for c in stake_candidates[:_STAKE_GROUPS_CAP]
+    ]
+
     group_tables_serial: dict[str, list[dict]] = {}
     for gname, rows in group_tables.items():
         group_tables_serial[gname] = [
@@ -153,6 +185,7 @@ def _build_facts(
         "group_tables": group_tables_serial,
         "best_third_place_teams": best_thirds,
         "qualification_status": qual_status,
+        "stake_groups": stake_groups,
     }
 
 

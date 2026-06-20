@@ -14,10 +14,13 @@ import sys
 from collections import defaultdict
 from datetime import date
 
+from sqlalchemy import select
+
 from app.config import settings
 from app.data.api_football import APIFootballClient
 from app.data.repository import (
     make_session_factory,
+    matches_table,
     prune_matches_not_in,
     upsert_matches,
     upsert_standings_snapshot,
@@ -121,6 +124,26 @@ def run(target_date: date) -> int:
 
     log.info("Collection complete for %s", target_date)
     return 0
+
+
+def collect_live(session_factory, client: APIFootballClient) -> int:
+    """Lightweight refresh of in-play matches: fetch ?live=all and upsert only
+    score/status/elapsed for fixtures we already track. No standings recompute,
+    no LLM, no prune. Returns the number of live matches upserted.
+
+    `?live=all` is league-agnostic, so results are intersected with stored
+    fixture_ids to avoid persisting other competitions' live games.
+    """
+    live = client.get_fixtures(live=True)
+    if not live:
+        return 0
+    with session_factory() as session:
+        known = {fid for (fid,) in session.execute(select(matches_table.c.fixture_id)).all()}
+        ours = [m for m in live if m.fixture_id in known]
+        if ours:
+            upsert_matches(session, ours)
+    log.info("Live refresh: %d in-play (%d ours) upserted", len(live), len(ours))
+    return len(ours)
 
 
 def main() -> None:

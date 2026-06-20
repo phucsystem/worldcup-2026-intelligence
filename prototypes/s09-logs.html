@@ -1,0 +1,222 @@
+<!--
+  Screen: S-09 System Logs (info / error event console)
+  CJX Stage: Verify / Trust -> cjx-usage
+  FR Mapping: brainstorm §"Run logging in agent_runs (per-node timings, token counts, cost, errors)";
+              transparency (P-04 Evaluator). Internal/ops observability of the daily pipeline.
+  Source: backend loggers — app/pipeline/run.py, app/pipeline/scheduler_entry.py, app/data/collect.py
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Logs · WC26 Intelligence</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="components.css">
+</head>
+<body class="cjx-usage">
+  <div class="app-layout">
+    <nav class="sidebar">
+      <div class="nav-inner">
+        <a class="brand" href="s01-brief-list.html">
+          <img class="brand-logo" src="logo.svg" alt="WC26 Intelligence">
+        </a>
+        <div class="nav-links">
+          <a class="nav-link" href="s01-brief-list.html">Today</a>
+          <a class="nav-link" href="s03-standings.html">Standings</a>
+          <a class="nav-link" href="s05-upcoming-knockout.html">Fixtures</a>
+          <a class="nav-link" href="s04-archive.html">Archive</a>
+          <a class="nav-link" href="s06-changelog.html">Changelog</a>
+          <a class="nav-link active" href="s09-logs.html">Logs</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="main-content standings-wide" data-cjx-entrance>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4);flex-wrap:wrap;margin-bottom:var(--space-6)">
+        <div>
+          <h1 class="page-title">System logs</h1>
+          <p class="summary-deck" style="margin-top:var(--space-2)">
+            Info and error events from the daily pipeline, scheduler, and data collector. Newest first.
+          </p>
+        </div>
+        <button class="log-tail" data-log-tail aria-pressed="true" title="Auto-scroll to newest events">
+          <span class="dot"></span><span class="lt-label">Live</span>
+        </button>
+      </div>
+
+      <!-- Toolbar: level filter + free-text search -->
+      <div class="log-toolbar">
+        <div class="toggle-group" data-log-filter role="group" aria-label="Filter by level">
+          <button class="toggle-btn active" data-level="all">All</button>
+          <button class="toggle-btn" data-level="info">Info</button>
+          <button class="toggle-btn" data-level="warn">Warning</button>
+          <button class="toggle-btn" data-level="error">Error</button>
+        </div>
+        <label class="log-search">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+          <input type="search" data-log-search placeholder="Search messages, sources…" aria-label="Search log messages">
+        </label>
+      </div>
+
+      <!-- Console -->
+      <div class="table-container log-console" data-log-console>
+        <table class="logs">
+          <thead>
+            <tr>
+              <th scope="col" style="width:140px">Time</th>
+              <th scope="col" style="width:96px">Level</th>
+              <th scope="col" style="width:200px">Source</th>
+              <th scope="col">Message</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- ERROR (expandable: traceback) -->
+            <tr class="log-row is-error" data-level="error">
+              <td class="c-time"><span class="log-time">03:41:58<span class="lt-rel">just now</span></span></td>
+              <td class="c-level">
+                <span class="lvl error">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                  Error
+                </span>
+              </td>
+              <td class="c-source"><span class="log-source">pipeline.run</span></td>
+              <td class="c-msg log-msg-cell">
+                <span class="log-msg">Analyst node failed: DeepSeek request timed out after 90s</span>
+                <button class="log-expand" aria-expanded="false">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  Traceback
+                </button>
+              </td>
+            </tr>
+            <tr class="log-detail-row" hidden>
+              <td colspan="4">
+<pre class="log-detail"><span class="ld-key">run_id</span>   2026-06-21-am   <span class="ld-key">node</span>  analyst   <span class="ld-key">attempt</span>  2/3
+Traceback (most recent call last):
+  File "app/pipeline/nodes_analyst.py", line 88, in analyst_node
+    resp = await client.complete(prompt, timeout=90)
+  File "app/llm/deepseek.py", line 61, in complete
+    raise LLMTimeout("no response within deadline")
+<span class="ld-err">app.llm.deepseek.LLMTimeout: no response within deadline</span></pre>
+              </td>
+            </tr>
+
+            <!-- WARN -->
+            <tr class="log-row" data-level="warn">
+              <td class="c-time"><span class="log-time">03:41:11<span class="lt-rel">47s ago</span></span></td>
+              <td class="c-level">
+                <span class="lvl warn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                  Warn
+                </span>
+              </td>
+              <td class="c-source"><span class="log-source">pipeline.run</span></td>
+              <td class="c-msg log-msg-cell"><span class="log-msg">DeepSeek response missing usage_metadata — cost estimate skipped for this node</span></td>
+            </tr>
+
+            <!-- INFO -->
+            <tr class="log-row" data-level="info">
+              <td class="c-time"><span class="log-time">03:40:52<span class="lt-rel">1m ago</span></span></td>
+              <td class="c-level">
+                <span class="lvl info">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  Info
+                </span>
+              </td>
+              <td class="c-source"><span class="log-source">pipeline.run</span></td>
+              <td class="c-msg log-msg-cell"><span class="log-msg">Collector node complete — 12 fixtures, 6 standings groups (1.8s)</span></td>
+            </tr>
+
+            <tr class="log-row" data-level="info">
+              <td class="c-time"><span class="log-time">03:40:50<span class="lt-rel">1m ago</span></span></td>
+              <td class="c-level">
+                <span class="lvl info">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  Info
+                </span>
+              </td>
+              <td class="c-source"><span class="log-source">data.collect</span></td>
+              <td class="c-msg log-msg-cell"><span class="log-msg">Pruned 3 stale-season fixtures before persisting current matchday</span></td>
+            </tr>
+
+            <!-- WARN (expandable: rate-limit context) -->
+            <tr class="log-row" data-level="warn">
+              <td class="c-time"><span class="log-time">03:40:48<span class="lt-rel">1m ago</span></span></td>
+              <td class="c-level">
+                <span class="lvl warn">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                  Warn
+                </span>
+              </td>
+              <td class="c-source"><span class="log-source">data.collect</span></td>
+              <td class="c-msg log-msg-cell">
+                <span class="log-msg">API-Football daily quota at 80% — throttling further reads</span>
+                <button class="log-expand" aria-expanded="false">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg>
+                  Context
+                </button>
+              </td>
+            </tr>
+            <tr class="log-detail-row" hidden>
+              <td colspan="4">
+<pre class="log-detail"><span class="ld-key">requests_today</span>  80 / 100
+<span class="ld-key">window_reset</span>    2026-06-22 00:00 UTC
+<span class="ld-key">endpoint</span>        /fixtures?league=1&season=2026
+<span class="ld-key">action</span>          deferring non-critical reads until reset</pre>
+              </td>
+            </tr>
+
+            <tr class="log-row" data-level="info">
+              <td class="c-time"><span class="log-time">03:40:44<span class="lt-rel">2m ago</span></span></td>
+              <td class="c-level">
+                <span class="lvl info">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  Info
+                </span>
+              </td>
+              <td class="c-source"><span class="log-source">data.collect</span></td>
+              <td class="c-msg log-msg-cell"><span class="log-msg">Fetched 12 fixtures from API-Football (group stage, season 2026)</span></td>
+            </tr>
+
+            <tr class="log-row" data-level="info">
+              <td class="c-time"><span class="log-time">03:40:00<span class="lt-rel">2m ago</span></span></td>
+              <td class="c-level">
+                <span class="lvl info">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  Info
+                </span>
+              </td>
+              <td class="c-source"><span class="log-source">pipeline.scheduler_entry</span></td>
+              <td class="c-msg log-msg-cell"><span class="log-msg">Scheduler tick — starting refresh run (interval 30m)</span></td>
+            </tr>
+
+            <tr class="log-row" data-level="info">
+              <td class="c-time"><span class="log-time">03:10:00<span class="lt-rel">32m ago</span></span></td>
+              <td class="c-level">
+                <span class="lvl info">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                  Info
+                </span>
+              </td>
+              <td class="c-source"><span class="log-source">pipeline.run</span></td>
+              <td class="c-msg log-msg-cell"><span class="log-msg">Editor node complete — brief 2026-06-21 stored (4 articles, 1,920 tokens)</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="log-noresults" hidden>No events match this filter.</div>
+      </div>
+
+      <!-- Pagination (50 events per page) — populated by interactions.js -->
+      <nav class="log-pagination" data-log-pagination aria-label="Log pagination" hidden></nav>
+    </main>
+
+    <footer class="app-footer">
+      <div class="footer-inner">
+        <span>Built for FIFA World Cup 2026 · AI-generated daily briefs.</span>
+        <span>Logs reflect pipeline, scheduler &amp; collector activity.</span>
+      </div>
+    </footer>
+  </div>
+  <script src="interactions.js"></script>
+</body>
+</html>

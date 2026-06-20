@@ -21,6 +21,12 @@ Produce a structured intelligence report as JSON with these exact fields:
 - underperformers: list of teams underperforming vs expectations (cite facts)
 - power_ranking: ordered list of top 8 teams with one-sentence justification each (use provided points/GD facts)
 - qualification_narrative: paragraph summarizing who has qualified, who is in contention, who is eliminated (cite provided qualification_status facts)
+- fixture_stakes: one entry per fixture in the provided `upcoming_fixtures` list. Each entry is {{fixture_id, stake_text}}. ECHO the exact `fixture_id` from the input — never invent a fixture_id or a matchup. `stake_text` is a short (<=12 words) clause naming what is on the line in that match (cite the teams' provided standings).
+- group_scenarios: one entry per group in the provided `stake_groups` list. Each entry is {{group_name, tag, line}}. `group_name` MUST match a provided `stake_groups` group exactly. `tag` is a 1-3 word status (e.g. "Decided tonight", "Tomorrow", "Wide open"). `line` is one sentence narrating the group's qualification picture, citing the provided rows.
+
+Grounding rules for the two new fields:
+- Use ONLY the `fixture_id`s present in `upcoming_fixtures` and the `group_name`s present in `stake_groups`. Do not add, rename, or invent any.
+- Do not restate or recompute the per-team notes — those are added deterministically downstream.
 
 Return valid JSON only. No prose outside the JSON object.
 """

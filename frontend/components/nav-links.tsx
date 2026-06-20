@@ -19,7 +19,7 @@ function isActive(pathname: string, href: string): boolean {
 export default function NavLinks() {
   const pathname = usePathname();
   return (
-    <div className="flex gap-5 text-sm font-medium whitespace-nowrap" style={{ color: "#A9B6D4" }}>
+    <div className="nav-links">
       {LINKS.map((link) => {
         const active = isActive(pathname, link.href);
         return (
@@ -27,12 +27,7 @@ export default function NavLinks() {
             key={link.href}
             href={link.href}
             aria-current={active ? "page" : undefined}
-            className="transition-colors hover:text-white"
-            style={{
-              color: active ? "#FFFFFF" : "inherit",
-              borderBottom: active ? "2px solid #2D6BF6" : "2px solid transparent",
-              paddingBottom: "2px",
-            }}
+            className={active ? "nav-link active" : "nav-link"}
           >
             {link.label}
           </Link>

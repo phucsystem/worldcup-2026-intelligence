@@ -8,6 +8,7 @@ intentional deviation.
 """
 
 from collections import defaultdict
+from datetime import date
 from typing import Sequence
 
 from app.data.models import Match, StandingRow
@@ -15,6 +16,7 @@ from app.data.models import Match, StandingRow
 _POINTS_WIN = 3
 _POINTS_DRAW = 1
 _MATCHES_PER_TEAM = 3  # WC group stage: each team plays 3 matches
+_TEAMS_TOTAL = 48  # WC 2026 expanded field
 
 
 def compute_group_table(matches_for_group: Sequence[Match]) -> list[StandingRow]:
@@ -159,3 +161,114 @@ def qualification_status(all_group_tables: dict[str, list[StandingRow]]) -> dict
                         result[row.team] = "contention"
 
     return result
+
+
+def group_scenarios(
+    all_group_tables: dict[str, list[StandingRow]],
+) -> dict[str, list[dict]]:
+    """Per-group, position-ordered rows annotated with a deterministic scenario
+    note + css status, derived from `qualification_status` and table position.
+
+    note/css mapping:
+      qualified              -> "Through",  css "qualified"
+      eliminated             -> "Out",      css "out"
+      contention, pos 1-2    -> "Win = top", css "contention"
+      contention, pos 3-4    -> "Must win",  css "contention"
+    """
+    status_map = qualification_status(all_group_tables)
+    out: dict[str, list[dict]] = {}
+    for group_name, rows in all_group_tables.items():
+        ordered = sorted(rows, key=lambda r: r.position or 99)
+        scenario_rows: list[dict] = []
+        for r in ordered:
+            status = status_map.get(r.team, "contention")
+            if status == "qualified":
+                note, css = "Through", "qualified"
+            elif status == "eliminated":
+                note, css = "Out", "out"
+            elif r.position in (1, 2):
+                note, css = "Win = top", "contention"
+            else:
+                note, css = "Must win", "contention"
+            scenario_rows.append({
+                "position": r.position,
+                "team": r.team,
+                "points": r.points,
+                "note": note,
+                "status": css,
+            })
+        out[group_name] = scenario_rows
+    return out
+
+
+def _today_in_brief_tz() -> date:
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    from app.config import settings
+
+    return datetime.now(tz=ZoneInfo(settings.BRIEF_TIMEZONE)).date()
+
+
+def tournament_summary(
+    matches: Sequence[Match],
+    all_group_tables: dict[str, list[StandingRow]],
+    today: date | None = None,
+) -> dict:
+    """Deterministic tournament-summary figures for the home-page panel.
+
+    `days_to_next_phase`/`next_phase_label` are None when no knockout fixtures
+    (group_name NULL) are scheduled yet — the frontend hides that stat cell.
+    """
+    if all_group_tables:
+        incomplete = any(
+            not all(r.played >= _MATCHES_PER_TEAM for r in rows)
+            for rows in all_group_tables.values()
+        )
+    else:
+        incomplete = True
+    stage = "Group Stage" if incomplete else "Knockout"
+
+    max_played = 0
+    for rows in all_group_tables.values():
+        for r in rows:
+            max_played = max(max_played, r.played)
+    matchday = min(max_played, _MATCHES_PER_TEAM)
+
+    status_map = qualification_status(all_group_tables) if all_group_tables else {}
+    teams_remaining = sum(1 for s in status_map.values() if s != "eliminated")
+
+    group_matches = [m for m in matches if m.group_name]
+    total_group = len(group_matches)
+    finished_group = sum(
+        1 for m in group_matches
+        if m.home_score is not None and m.away_score is not None
+    )
+    group_stage_pct = round(finished_group / total_group * 100) if total_group else 0
+
+    knockout = [m for m in matches if not m.group_name and m.kickoff_utc]
+    days_to_next_phase: int | None = None
+    next_phase_label: str | None = None
+    if knockout:
+        from zoneinfo import ZoneInfo
+
+        from app.config import settings
+
+        earliest = min(knockout, key=lambda m: m.kickoff_utc)
+        ref = today or _today_in_brief_tz()
+        ko_date = earliest.kickoff_utc.astimezone(
+            ZoneInfo(settings.BRIEF_TIMEZONE)
+        ).date()
+        days_to_next_phase = max((ko_date - ref).days, 0)
+        next_phase_label = earliest.stage or "Knockout"
+
+    return {
+        "stage": stage,
+        "matchday": matchday,
+        "matchday_total": _MATCHES_PER_TEAM,
+        "teams_remaining": teams_remaining,
+        "teams_total": _TEAMS_TOTAL,
+        "days_to_next_phase": days_to_next_phase,
+        "next_phase_label": next_phase_label,
+        "group_stage_pct": group_stage_pct,
+    }

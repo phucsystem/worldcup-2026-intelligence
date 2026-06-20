@@ -23,6 +23,7 @@ matches_table = sa.Table(
     sa.Column("home_score", sa.Integer),
     sa.Column("away_score", sa.Integer),
     sa.Column("status", sa.String),
+    sa.Column("elapsed", sa.Integer),
     sa.Column("kickoff_utc", sa.DateTime(timezone=True)),
     sa.Column("events_json", sa.JSON),
     sa.Column("stage", sa.String),
@@ -83,6 +84,7 @@ articles_table = sa.Table(
     sa.Column("status", sa.String, server_default="draft"),
     sa.Column("model_used", sa.String),
     sa.Column("created_at", sa.DateTime(timezone=True)),
+    sa.Column("intelligence", sa.JSON),
 )
 
 agent_runs_table = sa.Table(
@@ -141,6 +143,7 @@ def upsert_matches(session: Session, matches: list[Match]) -> None:
                 home_score=m.home_score,
                 away_score=m.away_score,
                 status=m.status,
+                elapsed=m.elapsed,
                 kickoff_utc=m.kickoff_utc,
                 events_json=m.events,
                 stage=m.stage,
@@ -155,6 +158,7 @@ def upsert_matches(session: Session, matches: list[Match]) -> None:
                     "home_score": m.home_score,
                     "away_score": m.away_score,
                     "status": m.status,
+                    "elapsed": m.elapsed,
                     "kickoff_utc": m.kickoff_utc,
                     "events_json": m.events,
                     "stage": m.stage,
@@ -288,6 +292,7 @@ def upsert_article(
             status=status,
             model_used="deepseek-chat",
             created_at=datetime.now(tz=timezone.utc),
+            intelligence=article.get("intelligence"),
         )
         .on_conflict_do_update(
             index_elements=["brief_date"],
@@ -297,6 +302,7 @@ def upsert_article(
                 "body_md": article.get("body_md"),
                 "status": status,
                 "model_used": "deepseek-chat",
+                "intelligence": article.get("intelligence"),
             },
         )
     )

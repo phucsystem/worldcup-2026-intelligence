@@ -6,7 +6,9 @@ from datetime import datetime, timezone
 
 from app.api.fixtures import (
     is_knockout_stage,
+    is_live_status,
     shape_knockout,
+    shape_live,
     shape_upcoming,
 )
 
@@ -15,7 +17,10 @@ def _dt(y, m, d, h=12):
     return datetime(y, m, d, h, 0, tzinfo=timezone.utc)
 
 
-def _match(fid, home, away, kickoff, stage=None, group=None, hs=None, as_=None, status="NS"):
+def _match(
+    fid, home, away, kickoff, stage=None, group=None, hs=None, as_=None,
+    status="NS", elapsed=None, updated_at=None,
+):
     return {
         "fixture_id": fid,
         "home_team": home,
@@ -23,9 +28,11 @@ def _match(fid, home, away, kickoff, stage=None, group=None, hs=None, as_=None, 
         "home_score": hs,
         "away_score": as_,
         "status": status,
+        "elapsed": elapsed,
         "stage": stage,
         "group_name": group,
         "kickoff_utc": kickoff,
+        "updated_at": updated_at,
     }
 
 
@@ -55,10 +62,12 @@ class TestIsKnockoutStage:
 
 class TestShapeUpcoming:
     def test_groups_by_day_ascending_and_picks_up_next(self):
+        # Times chosen to stay within the same Australia/Melbourne (UTC+10) day
+        # after conversion: 06:00Z = 16:00 local, still June 13.
         rows = [
-            _match(2, "France", "Brazil", _dt(2026, 6, 13, 18)),
+            _match(2, "France", "Brazil", _dt(2026, 6, 13, 6)),
             _match(1, "France", "Brazil", _dt(2026, 6, 12, 9)),
-            _match(3, "Brazil", "France", _dt(2026, 6, 13, 12)),
+            _match(3, "Brazil", "France", _dt(2026, 6, 13, 2)),
         ]
         out = shape_upcoming(rows, LOGOS)
         assert [d.date.isoformat() for d in out.days] == ["2026-06-12", "2026-06-13"]
@@ -66,6 +75,13 @@ class TestShapeUpcoming:
         assert [f.fixture_id for f in out.days[1].fixtures] == [3, 2]
         # up_next is the soonest overall
         assert out.up_next.fixture_id == 1
+
+    def test_buckets_by_brief_timezone_not_utc(self):
+        # 17:00Z is 03:00 the NEXT day in Australia/Melbourne (UTC+10), so the
+        # match must land on June 21 — not June 20 as naive UTC bucketing did.
+        rows = [_match(1, "France", "Brazil", _dt(2026, 6, 20, 17))]
+        out = shape_upcoming(rows, LOGOS)
+        assert [d.date.isoformat() for d in out.days] == ["2026-06-21"]
 
     def test_enriches_logos(self):
         rows = [_match(1, "France", "Brazil", _dt(2026, 6, 12))]
@@ -83,6 +99,44 @@ class TestShapeUpcoming:
         out = shape_upcoming([], LOGOS)
         assert out.up_next is None
         assert out.days == []
+
+
+# ---------------------------------------------------------------------------
+# is_live_status / shape_live
+# ---------------------------------------------------------------------------
+
+class TestIsLiveStatus:
+    def test_in_play_codes_are_live(self):
+        for s in ("1H", "HT", "2H", "ET", "BT", "P", "LIVE"):
+            assert is_live_status(s)
+
+    def test_not_started_and_finished_are_not_live(self):
+        for s in ("NS", "FT", "AET", "PEN", "PST", "CANC", None, ""):
+            assert not is_live_status(s)
+
+
+class TestShapeLive:
+    def test_filters_to_live_only(self):
+        rows = [
+            _match(1, "France", "Brazil", _dt(2026, 6, 19, 10), status="NS"),
+            _match(2, "France", "Brazil", _dt(2026, 6, 19, 8), status="2H", hs=1, as_=0, elapsed=67),
+            _match(3, "Brazil", "France", _dt(2026, 6, 18, 12), status="FT", hs=2, as_=1),
+            _match(4, "France", "Brazil", _dt(2026, 6, 19, 9), status="HT", hs=0, as_=0, elapsed=45),
+        ]
+        out = shape_live(rows, LOGOS)
+        assert [f.fixture_id for f in out] == [2, 4]  # live only, soonest-kicked first
+
+    def test_preserves_elapsed_and_score(self):
+        rows = [_match(2, "France", "Brazil", _dt(2026, 6, 19, 8), status="2H", hs=1, as_=0, elapsed=67)]
+        out = shape_live(rows, LOGOS)
+        assert out[0].elapsed == 67
+        assert out[0].home_score == 1
+        assert out[0].away_score == 0
+        assert out[0].home_logo == "https://img/fr.png"
+
+    def test_empty_when_none_live(self):
+        rows = [_match(1, "France", "Brazil", _dt(2026, 6, 19), status="NS")]
+        assert shape_live(rows, LOGOS) == []
 
 
 # ---------------------------------------------------------------------------

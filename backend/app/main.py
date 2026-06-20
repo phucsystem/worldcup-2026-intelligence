@@ -5,6 +5,7 @@ from app.api.admin import router as admin_router
 from app.api.briefs import router as briefs_router
 from app.api.fixtures import router as fixtures_router, stars_router
 from app.api.standings import router as standings_router
+from app.api.tournament import router as tournament_router
 
 app = FastAPI(title="World Cup Intelligence API")
 
@@ -19,6 +20,7 @@ app.include_router(briefs_router)
 app.include_router(standings_router)
 app.include_router(fixtures_router)
 app.include_router(stars_router)
+app.include_router(tournament_router)
 # Local/dev-only trigger endpoints (unauthenticated) — see app/api/admin.py warning.
 app.include_router(admin_router)
 

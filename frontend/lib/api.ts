@@ -6,6 +6,36 @@ export interface BriefSummary {
   summary: string | null;
 }
 
+export interface FixtureStake {
+  fixture_id: number;
+  stake_text: string;
+}
+
+export interface ScenarioRow {
+  position: number | null;
+  team: string;
+  points: number;
+  note: string;
+  status: "qualified" | "out" | "contention" | string;
+}
+
+export interface GroupScenario {
+  group_name: string;
+  tag: string;
+  line: string;
+  rows?: ScenarioRow[];
+}
+
+export interface Intelligence {
+  storylines?: string[];
+  surprise_teams?: string[];
+  underperformers?: string[];
+  power_ranking?: string[];
+  qualification_narrative?: string;
+  fixture_stakes?: FixtureStake[];
+  group_scenarios?: GroupScenario[];
+}
+
 export interface BriefDetail {
   date: string;
   title: string | null;
@@ -13,6 +43,18 @@ export interface BriefDetail {
   body_md: string | null;
   model_used: string | null;
   created_at: string | null;
+  intelligence?: Intelligence | null;
+}
+
+export interface TournamentSummary {
+  stage: string;
+  matchday: number;
+  matchday_total: number;
+  teams_remaining: number;
+  teams_total: number;
+  days_to_next_phase: number | null;
+  next_phase_label: string | null;
+  group_stage_pct: number;
 }
 
 export interface RecentResult {
@@ -50,9 +92,11 @@ export interface FixtureRow {
   home_score: number | null;
   away_score: number | null;
   status: string | null;
+  elapsed: number | null;
   stage: string | null;
   group_name: string | null;
   kickoff_utc: string | null;
+  updated_at: string | null;
 }
 
 export interface FixtureDay {
@@ -130,10 +174,18 @@ export async function getUpcomingFixtures(): Promise<UpcomingFixtures> {
   );
 }
 
+export async function getLiveFixtures(): Promise<FixtureRow[]> {
+  return (await apiFetch<FixtureRow[]>("/api/fixtures/live")) ?? [];
+}
+
 export async function getKnockout(): Promise<KnockoutBracket> {
   return (await apiFetch<KnockoutBracket>("/api/fixtures/knockout")) ?? { rounds: [] };
 }
 
 export async function getStars(): Promise<StarRow[]> {
   return (await apiFetch<StarRow[]>("/api/stars")) ?? [];
+}
+
+export async function getTournamentSummary(): Promise<TournamentSummary | null> {
+  return apiFetch<TournamentSummary>("/api/tournament/summary");
 }

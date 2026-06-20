@@ -11,6 +11,8 @@ class Match(BaseModel):
     home_score: Optional[int]
     away_score: Optional[int]
     status: Optional[str]
+    # Live match minute from API-Football (fixture.status.elapsed); None when not in play.
+    elapsed: Optional[int] = None
     kickoff_utc: Optional[datetime]
     events: Optional[list[dict]] = None
     # Raw competition round, e.g. "Group Stage - 1" or "Round of 16". Used to

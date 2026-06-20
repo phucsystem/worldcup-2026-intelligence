@@ -15,5 +15,12 @@ class Settings(BaseSettings):
     DEEPSEEK_API_KEY: Optional[str] = None
     BRIEF_TIMEZONE: str = "Australia/Melbourne"
 
+    # Live poller: how often to hit ?live=all while a match is in its window,
+    # how long to sleep when no match is live, and the post-kickoff window
+    # during which a fixture is considered possibly-in-play.
+    LIVE_POLL_SECONDS: int = 120
+    IDLE_SLEEP_SECONDS: int = 300
+    LIVE_WINDOW_HOURS: int = 3
+
 
 settings = Settings()

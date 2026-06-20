@@ -96,6 +96,7 @@ def _map_fixture(raw: dict) -> Match:
         home_score=home_score,
         away_score=away_score,
         status=status,
+        elapsed=status_obj.get("elapsed"),
         kickoff_utc=kickoff_utc,
         events=None,
         stage=raw.get("league", {}).get("round"),
@@ -149,10 +150,19 @@ class APIFootballClient(DataSource):
             raise RuntimeError(f"API-Football error for {path}: {errors}")
         return data
 
-    def get_fixtures(self, date_from: date | None = None, date_to: date | None = None) -> list[Match]:
+    def get_fixtures(
+        self,
+        date_from: date | None = None,
+        date_to: date | None = None,
+        live: bool = False,
+    ) -> list[Match]:
         """Fetch fixtures. With no date window, returns ALL fixtures for the
-        league+season (the tournament-to-date set used to compute standings)."""
+        league+season (the tournament-to-date set used to compute standings).
+        With live=True, requests only in-play fixtures (`?live=all`) in a single
+        call — used by the lightweight live poller."""
         params: dict = {"league": self._league_id, "season": self._season}
+        if live:
+            params["live"] = "all"
         if date_from:
             params["from"] = date_from.isoformat()
         if date_to:

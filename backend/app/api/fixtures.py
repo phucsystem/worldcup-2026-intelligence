@@ -2,8 +2,9 @@
 bracket, and tournament top scorers. Shaping logic is split into pure functions
 (no DB/network) so it can be unit-tested directly.
 """
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -33,6 +34,10 @@ KNOCKOUT_ROUND_ORDER = [
 ]
 _KNOCKOUT_ORDER_INDEX = {name.lower(): i for i, name in enumerate(KNOCKOUT_ROUND_ORDER)}
 
+# API-Football short status codes for an in-play match (excludes NS and any
+# finished/postponed state). Drives the /live endpoint and the live poller.
+LIVE_STATUSES = {"1H", "HT", "2H", "ET", "BT", "P", "LIVE"}
+
 
 def _get_session():
     global _engine
@@ -55,9 +60,11 @@ class FixtureRow(BaseModel):
     home_score: Optional[int] = None
     away_score: Optional[int] = None
     status: Optional[str] = None
+    elapsed: Optional[int] = None
     stage: Optional[str] = None
     group_name: Optional[str] = None
     kickoff_utc: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 
 class FixtureDay(BaseModel):
@@ -95,6 +102,10 @@ def is_knockout_stage(stage: Optional[str]) -> bool:
     return bool(stage) and stage.strip().lower() in _KNOCKOUT_ORDER_INDEX
 
 
+def is_live_status(status: Optional[str]) -> bool:
+    return bool(status) and status.strip().upper() in LIVE_STATUSES
+
+
 def _enrich(row: dict, logos: dict[str, str]) -> FixtureRow:
     return FixtureRow(
         fixture_id=row["fixture_id"],
@@ -105,9 +116,11 @@ def _enrich(row: dict, logos: dict[str, str]) -> FixtureRow:
         home_score=row.get("home_score"),
         away_score=row.get("away_score"),
         status=row.get("status"),
+        elapsed=row.get("elapsed"),
         stage=row.get("stage"),
         group_name=row.get("group_name"),
         kickoff_utc=row.get("kickoff_utc"),
+        updated_at=row.get("updated_at"),
     )
 
 
@@ -118,12 +131,19 @@ def shape_upcoming(rows: list[dict], logos: dict[str, str]) -> UpcomingFixtures:
         (_enrich(r, logos) for r in rows),
         key=lambda f: (f.kickoff_utc is None, f.kickoff_utc),
     )
+    # Bucket by the calendar day in the brief timezone, not UTC: a 17:00Z match
+    # is the next morning in Australia/Melbourne, so UTC bucketing splits one
+    # local matchday across two day headers and mislabels each.
+    brief_tz = ZoneInfo(settings.BRIEF_TIMEZONE)
     by_day: dict[date, list[FixtureRow]] = {}
     day_order: list[date] = []
     for f in enriched:
         if f.kickoff_utc is None:
             continue
-        day = f.kickoff_utc.date()
+        ko = f.kickoff_utc
+        if ko.tzinfo is None:
+            ko = ko.replace(tzinfo=timezone.utc)
+        day = ko.astimezone(brief_tz).date()
         if day not in by_day:
             by_day[day] = []
             day_order.append(day)
@@ -132,6 +152,14 @@ def shape_upcoming(rows: list[dict], logos: dict[str, str]) -> UpcomingFixtures:
     days = [FixtureDay(date=d, fixtures=by_day[d]) for d in day_order]
     up_next = next((f for f in enriched if f.kickoff_utc is not None), None)
     return UpcomingFixtures(up_next=up_next, days=days)
+
+
+def shape_live(rows: list[dict], logos: dict[str, str]) -> list[FixtureRow]:
+    """Filter to in-play matches and return them soonest-kicked first. Pure
+    (no DB/network) so the live filter + ordering is unit-tested."""
+    live = [_enrich(r, logos) for r in rows if is_live_status(r.get("status"))]
+    live.sort(key=lambda f: (f.kickoff_utc is None, f.kickoff_utc))
+    return live
 
 
 def shape_knockout(rows: list[dict], logos: dict[str, str]) -> KnockoutBracket:
@@ -176,9 +204,11 @@ def _row_to_dict(r) -> dict:
         "home_score": r.home_score,
         "away_score": r.away_score,
         "status": r.status,
+        "elapsed": r.elapsed,
         "stage": r.stage,
         "group_name": r.group_name,
         "kickoff_utc": r.kickoff_utc,
+        "updated_at": r.updated_at,
     }
 
 
@@ -198,6 +228,30 @@ def get_upcoming():
     finally:
         session.close()
     return shape_upcoming([_row_to_dict(r) for r in rows], logos)
+
+
+@router.get("/live", response_model=list[FixtureRow])
+def get_live():
+    """In-play matches, soonest-kicked first. Reads the DB only (the live poller
+    refreshes scores/elapsed out-of-band), so this makes zero external calls.
+
+    A finished match drops out of API-Football's ?live=all feed, so the live
+    poller never writes its final FT status — only the full collect does. The
+    kickoff-window guard keeps such a stale live row from rendering as "live"
+    indefinitely between full collects."""
+    session = _get_session()
+    cutoff = datetime.now(tz=timezone.utc) - timedelta(hours=settings.LIVE_WINDOW_HOURS)
+    try:
+        rows = session.execute(
+            select(matches_table)
+            .where(matches_table.c.status.in_(LIVE_STATUSES))
+            .where(matches_table.c.kickoff_utc >= cutoff)
+            .order_by(matches_table.c.kickoff_utc)
+        ).fetchall()
+        logos = _logo_map(session)
+    finally:
+        session.close()
+    return shape_live([_row_to_dict(r) for r in rows], logos)
 
 
 @router.get("/knockout", response_model=KnockoutBracket)

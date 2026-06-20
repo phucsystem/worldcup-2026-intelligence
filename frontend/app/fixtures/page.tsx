@@ -1,5 +1,6 @@
 import { getUpcomingFixtures, getKnockout } from "@/lib/api";
 import FixturesView from "@/components/fixtures-view";
+import { TimezoneNote } from "@/components/local-time";
 
 export const dynamic = "force-dynamic";
 
@@ -12,9 +13,7 @@ export default async function FixturesPage() {
         <h1 className="font-extrabold" style={{ color: "#FFFFFF", fontSize: "clamp(1.75rem, 3vw, 2.25rem)" }}>
           Fixtures
         </h1>
-        <span className="text-xs" style={{ color: "#6B7A9E" }}>
-          Times in Australia/Melbourne (AEST)
-        </span>
+        <TimezoneNote className="text-xs" style={{ color: "#6B7A9E" }} />
       </div>
 
       <FixturesView upcoming={upcoming} knockout={knockout} />

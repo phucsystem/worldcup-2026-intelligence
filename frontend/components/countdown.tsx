@@ -5,18 +5,37 @@ import { useEffect, useState } from "react";
 interface Props {
   kickoffUtc: string | null;
   className?: string;
+  variant?: "inline" | "tiles";
 }
 
-function format(msRemaining: number): string {
-  const s = Math.floor(msRemaining / 1000);
-  const d = Math.floor(s / 86400);
-  const h = Math.floor((s % 86400) / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const sec = s % 60;
+type Parts = { d: number; h: number; m: number; s: number };
+
+function parts(msRemaining: number): Parts {
+  const total = Math.floor(msRemaining / 1000);
+  return {
+    d: Math.floor(total / 86400),
+    h: Math.floor((total % 86400) / 3600),
+    m: Math.floor((total % 3600) / 60),
+    s: total % 60,
+  };
+}
+
+function inlineLabel({ d, h, m, s }: Parts): string {
   if (d > 0) return `${d}d ${h}h`;
   if (h > 0) return `${h}h ${m}m`;
-  if (m > 0) return `${m}m ${sec}s`;
-  return `${sec}s`;
+  if (m > 0) return `${m}m ${s}s`;
+  return `${s}s`;
+}
+
+const pad = (n: number) => (n < 10 ? `0${n}` : String(n));
+
+function Segment({ num, label }: { num: number; label: string }) {
+  return (
+    <span className="cd-seg">
+      <span className="cd-num">{pad(num)}</span>
+      <span className="cd-lbl">{label}</span>
+    </span>
+  );
 }
 
 /**
@@ -24,9 +43,11 @@ function format(msRemaining: number): string {
  * (`aria-hidden`) — screen readers get the static kickoff time from the
  * surrounding fixture row. Renders a stable placeholder until mounted to avoid
  * hydration mismatch, and honors prefers-reduced-motion (no per-second churn).
+ * `variant="tiles"` renders segmented HRS/MIN/SEC tiles (Up-next banner);
+ * `variant="inline"` (default) renders a compact "in 5h 25m" string.
  */
-export default function Countdown({ kickoffUtc, className }: Props) {
-  const [label, setLabel] = useState<string | null>(null);
+export default function Countdown({ kickoffUtc, className, variant = "inline" }: Props) {
+  const [remaining, setRemaining] = useState<number | null>(null);
 
   useEffect(() => {
     if (!kickoffUtc) return;
@@ -39,7 +60,7 @@ export default function Countdown({ kickoffUtc, className }: Props) {
 
     const tick = () => {
       const diff = target - Date.now();
-      setLabel(diff <= 0 ? "LIVE" : format(diff));
+      setRemaining(diff);
       return diff;
     };
 
@@ -52,7 +73,14 @@ export default function Countdown({ kickoffUtc, className }: Props) {
     return () => window.clearInterval(id);
   }, [kickoffUtc]);
 
-  if (label === null) {
+  if (remaining === null) {
+    if (variant === "tiles") {
+      return (
+        <span aria-hidden="true" className="countdown" style={{ color: "#6B7A9E" }}>
+          —
+        </span>
+      );
+    }
     return (
       <span aria-hidden="true" className={className} style={{ color: "#6B7A9E" }}>
         —
@@ -60,7 +88,27 @@ export default function Countdown({ kickoffUtc, className }: Props) {
     );
   }
 
-  const isLive = label === "LIVE";
+  const isLive = remaining <= 0;
+
+  if (variant === "tiles") {
+    if (isLive) {
+      return (
+        <span aria-hidden="true" className="countdown">
+          <span className="cd-live">LIVE</span>
+        </span>
+      );
+    }
+    const p = parts(remaining);
+    return (
+      <span aria-hidden="true" className="countdown">
+        {p.d > 0 && <Segment num={p.d} label="days" />}
+        <Segment num={p.h} label="hrs" />
+        <Segment num={p.m} label="min" />
+        <Segment num={p.s} label="sec" />
+      </span>
+    );
+  }
+
   return (
     <span
       aria-hidden="true"
@@ -71,7 +119,7 @@ export default function Countdown({ kickoffUtc, className }: Props) {
         fontWeight: 600,
       }}
     >
-      {isLive ? "LIVE" : `in ${label}`}
+      {isLive ? "LIVE" : `in ${inlineLabel(parts(remaining))}`}
     </span>
   );
 }

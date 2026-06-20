@@ -2,24 +2,13 @@ import type { FixtureRow as Fixture } from "@/lib/api";
 import TeamFlag from "@/components/team-flag";
 import Countdown from "@/components/countdown";
 import LiveBadge from "@/components/live-badge";
+import LocalTime from "@/components/local-time";
 
 // API status short-codes that mean a match is in progress.
 const LIVE_STATUSES = new Set(["1H", "2H", "HT", "ET", "BT", "P", "LIVE", "INT"]);
 
 function isLive(status: string | null): boolean {
   return !!status && LIVE_STATUSES.has(status);
-}
-
-function kickoffTime(iso: string | null): string {
-  if (!iso) return "TBD";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "TBD";
-  return d.toLocaleTimeString("en-AU", {
-    timeZone: "Australia/Melbourne",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
 }
 
 interface Props {
@@ -30,7 +19,6 @@ interface Props {
 
 export default function FixtureRow({ fixture, showCountdown = false, showScore = false }: Props) {
   const live = isLive(fixture.status);
-  const time = kickoffTime(fixture.kickoff_utc);
 
   return (
     <div
@@ -38,10 +26,13 @@ export default function FixtureRow({ fixture, showCountdown = false, showScore =
       style={{ backgroundColor: "#0A1B3D", borderColor: "#1E3157", borderRadius: "12px" }}
     >
       <div className="text-sm font-semibold tabular-nums shrink-0" style={{ color: "#FFFFFF", width: "3.5rem" }}>
-        {time}
-        <span className="block text-xs font-normal" style={{ color: "#6B7A9E" }}>
-          AEST
-        </span>
+        <LocalTime iso={fixture.kickoff_utc} mode="time" />
+        <LocalTime
+          iso={fixture.kickoff_utc}
+          mode="zone"
+          className="block text-xs font-normal"
+          style={{ color: "#6B7A9E" }}
+        />
       </div>
 
       <div className="flex-1 min-w-0 flex items-center gap-2 flex-wrap">
