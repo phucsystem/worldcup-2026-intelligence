@@ -40,6 +40,10 @@ services:
       API_FOOTBALL_KEY: ${API_FOOTBALL_KEY:-}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       BRIEF_TIMEZONE: ${BRIEF_TIMEZONE:-Australia/Melbourne}
+      # FIFA World Cup = league 1. Free API-Football plans only cover 2021–2023,
+      # so set API_FOOTBALL_SEASON=2022 in .env for real demo data (2026 needs a paid plan).
+      API_FOOTBALL_LEAGUE: ${API_FOOTBALL_LEAGUE:-1}
+      API_FOOTBALL_SEASON: ${API_FOOTBALL_SEASON:-2026}
     depends_on:
       postgres:
         condition: service_healthy

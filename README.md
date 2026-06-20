@@ -74,6 +74,15 @@ The frontend (SSR) reaches the API over the compose network via `API_BASE=http:/
 
 **Optional API keys** (for live data + brief generation): create `.env` at the repo root with `API_FOOTBALL_KEY` and `DEEPSEEK_API_KEY`; compose passes them to the `backend` service. Without them, the site still runs and shows the seeded standings (briefs list stays empty).
 
+**Real data on the free API-Football plan:** season 2026 requires a paid plan; the free plan covers 2021–2023. Set `API_FOOTBALL_SEASON=2022` in `.env` to populate the DB with the real Qatar 2022 World Cup (64 matches, 8 groups), then trigger a collect:
+
+```bash
+docker compose exec backend python -m app.data.collect --date $(date +%F)
+# or: curl -X POST http://localhost:8000/api/admin/collect
+```
+
+The collector pulls group membership from the standings endpoint, counts only group-stage matches toward the tables, and computes all standings deterministically in Python.
+
 **Generate a brief inside the running stack:**
 
 ```bash
@@ -86,6 +95,20 @@ docker compose exec backend python -m app.pipeline.run --date 2026-06-19
 ```bash
 docker compose exec backend python -m app.data.collect --date 2026-06-19
 ```
+
+**HTTP triggers (local/dev only — unauthenticated):**
+
+The backend also exposes two POST endpoints to trigger work over HTTP (handy for a local scheduler/webhook). They default to today's date in `BRIEF_TIMEZONE`; pass `?date=YYYY-MM-DD` to override.
+
+```bash
+# Collect data only (no LLM cost)
+curl -X POST http://localhost:8000/api/admin/collect
+
+# Full pipeline: collect -> generate + publish brief
+curl -X POST "http://localhost:8000/api/admin/run-brief?date=2026-06-20"
+```
+
+> ⚠️ These endpoints write data and spend API-Football quota + DeepSeek tokens, and have **no authentication**. They are for local/dev use. Do **not** expose them on a public ingress without adding auth.
 
 Reset everything (including the DB volume):
 
