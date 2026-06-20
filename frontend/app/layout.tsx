@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import "./globals.css";
 import NavLinks from "@/components/nav-links";
+import BrandLogo from "@/components/brand-logo";
 
 export const metadata: Metadata = {
   title: "WC26 Intelligence",
@@ -16,12 +18,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             className="flex items-center gap-6 px-6 py-4 overflow-x-auto"
             style={{ maxWidth: "1120px", margin: "0 auto" }}
           >
-            <span
-              className="font-bold text-lg whitespace-nowrap"
-              style={{ color: "#FFFFFF", letterSpacing: "-0.01em" }}
-            >
-              WC26 Intelligence
-            </span>
+            <Link href="/" aria-label="WC26 Intelligence — home" className="shrink-0">
+              <BrandLogo height={38} />
+            </Link>
             <NavLinks />
           </nav>
         </header>
