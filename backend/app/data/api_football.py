@@ -1,3 +1,4 @@
+import re
 from datetime import date, datetime, timezone
 from typing import Any
 
@@ -13,6 +14,47 @@ WC_SEASON: int = 2026
 
 # Known status strings that mean "no score yet"
 _NOT_STARTED = {"NS", "TBD", "PST", "CANC", "SUSP", "ABD", "AWD", "WO"}
+
+# A real group label is "Group A".."Group L". The standings payload also carries
+# an aggregate "Group Stage" block (the same teams again) which must NOT be
+# treated as a group — it would overwrite teams' real group assignments.
+_REAL_GROUP = re.compile(r"^Group [A-Z]$")
+
+
+def _is_real_group(label: str | None) -> bool:
+    return bool(label) and bool(_REAL_GROUP.match(label))
+
+
+def parse_teams_from_standings(data: dict) -> list[Team]:
+    """Extract one `Team` per national side from a /standings payload, keeping
+    its real group label. Pure (no I/O) so the aggregate-block handling is
+    unit-tested. Order-independent: a real `Group X` label always wins over the
+    generic aggregate, regardless of which block appears first."""
+    by_id: dict[int, Team] = {}
+    for league_block in data.get("response", []):
+        for group in league_block.get("league", {}).get("standings", []):
+            for entry in group:
+                team = entry.get("team", {})
+                name = team.get("name")
+                team_id = team.get("id")
+                if not name or team_id is None:
+                    continue
+                real_group = entry.get("group") if _is_real_group(entry.get("group")) else None
+                existing = by_id.get(team_id)
+                if existing is None:
+                    by_id[team_id] = Team(
+                        team_id=team_id,
+                        name=name,
+                        logo_url=team.get("logo"),
+                        group_name=real_group,
+                    )
+                    continue
+                # Merge duplicates: prefer a real group; never let the aggregate clobber it.
+                if real_group and not _is_real_group(existing.group_name):
+                    existing.group_name = real_group
+                if not existing.logo_url:
+                    existing.logo_url = team.get("logo")
+    return list(by_id.values())
 
 
 def _parse_score(value: Any) -> int | None:
@@ -128,26 +170,7 @@ class APIFootballClient(DataSource):
         """National team metadata (id, name, crest logo, group) from the
         standings payload — no extra API call beyond the standings fetch. Group
         membership is structural; table NUMBERS stay Python-computed from results."""
-        teams: list[Team] = []
-        for league_block in self._standings_response().get("response", []):
-            for group in league_block.get("league", {}).get("standings", []):
-                for entry in group:
-                    team = entry.get("team", {})
-                    name = team.get("name")
-                    team_id = team.get("id")
-                    # Skip rows missing an id/name: team_id is the PK, so coalescing
-                    # to 0 would silently collapse multiple teams onto one row.
-                    if not name or not team_id:
-                        continue
-                    teams.append(
-                        Team(
-                            team_id=team_id,
-                            name=name,
-                            logo_url=team.get("logo"),
-                            group_name=entry.get("group"),
-                        )
-                    )
-        return teams
+        return parse_teams_from_standings(self._standings_response())
 
     def get_top_scorers(self) -> list[TopScorer]:
         """Tournament top scorers (1 API call). Free plan: season 2022."""
@@ -179,9 +202,12 @@ class APIFootballClient(DataSource):
         rows: list[StandingRow] = []
         for league_block in self._standings_response().get("response", []):
             for group in league_block.get("league", {}).get("standings", []):
-                # group is a list of team rows; group name comes from each entry's "group"
+                # group is a list of team rows; group name comes from each entry's "group".
+                # Skip the aggregate "Group Stage" block — only real groups (A–L).
                 for entry in group:
                     group_name = entry.get("group", "")
+                    if not _is_real_group(group_name):
+                        continue
                     rows.append(_map_standing_row(entry, group_name))
         return rows
 
