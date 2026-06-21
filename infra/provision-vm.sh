@@ -5,8 +5,8 @@
 # Default size is an amd64 v2 burstable SKU (gen1 B-series like B1ms/B2s is often
 # NotAvailableForSubscription). Avoid ARM (B*p*) SKUs — CI builds amd64 images.
 #
-# Usage:
-#   API_FOOTBALL_KEY=... DEEPSEEK_API_KEY=... ./infra/provision-vm.sh
+# Run on your LOCAL machine where `az login` is done — NOT on the VM.
+# Usage: ./infra/provision-vm.sh
 # Override defaults via env: RG, LOCATION, VM_NAME, VM_SIZE, ADMIN_USER, SPOT=1
 set -euo pipefail
 
@@ -19,8 +19,8 @@ IMAGE="${IMAGE:-Ubuntu2204}"
 DISK_GB="${DISK_GB:-30}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-command -v az >/dev/null || { echo "az CLI not found"; exit 1; }
-az account show >/dev/null || { echo "Run 'az login' first"; exit 1; }
+command -v az >/dev/null || { echo "az CLI not found — run this on your LOCAL machine (where 'az login' is done), not the VM." >&2; exit 1; }
+az account show >/dev/null 2>&1 || { echo "Run 'az login' first." >&2; exit 1; }
 
 MY_IP="$(curl -fsS https://api.ipify.org)"
 

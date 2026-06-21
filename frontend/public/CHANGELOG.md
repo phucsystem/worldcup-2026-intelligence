@@ -2,6 +2,16 @@
 
 What's shipping on the World Cup 2026 Intelligence platform. Newest first.
 
+## v0.6.0 — 21 Jun 2026
+
+- **Added** — Official Buy Me a Coffee button in the header for visitors who want to back the project.
+
+## v0.5.0 — 21 Jun 2026
+
+- **Added** — Logs console: operators can inspect persisted line-level app logs from the dashboard.
+- **Improved** — Latest Results now defaults to a date timeline, highlights match dates, and keeps grouped results ordered newest first.
+- **Improved** — Main-branch PRs now require this changelog to be updated before merge.
+
 ## v0.4.0 — 19 Jun 2026
 
 - **Added** — Fixtures page: upcoming matches by day with kickoff times in Australia/Melbourne, plus a projected knockout bracket (Round of 16 → Final).
