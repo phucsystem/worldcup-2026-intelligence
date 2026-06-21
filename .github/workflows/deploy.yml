@@ -107,6 +107,9 @@ jobs:
     name: E2E (Robot Framework)
     runs-on: ubuntu-latest
     needs: test
+    # Hard ceiling so a hung browser/dep install fails fast instead of running
+    # for the full default 6h (a stuck `apt` dpkg-lock wait burned >12m once).
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres:16-alpine
@@ -176,12 +179,13 @@ jobs:
           key: pw-browsers-${{ runner.os }}-${{ hashFiles('e2e/requirements.txt') }}
 
       - name: Install Robot Framework + Browser
+        timeout-minutes: 6
         run: |
           pip install -r e2e/requirements.txt
           # Downloads Chromium into PLAYWRIGHT_BROWSERS_PATH; skipped on a cache hit.
+          # ubuntu-latest already ships the shared libs headless Chromium needs, so
+          # we skip the apt `install-deps` step (it could block on the dpkg lock).
           rfbrowser init chromium
-          # System libraries for headless Chromium on the Linux runner.
-          sudo npx --yes playwright install-deps chromium || true
 
       - name: Run e2e suites
         working-directory: e2e
