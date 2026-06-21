@@ -32,7 +32,9 @@ browser never calls the backend (all `lib/api` access is server-side SSR).
 
 ### 1. Provision the VM
 ```bash
-./infra/provision-vm.sh          # B1ms Ubuntu, Docker via cloud-init, NSG 80/443 + 22-from-your-IP
+./infra/provision-vm.sh          # B2als_v2 (2 vCPU/4 GiB) Ubuntu, Docker via cloud-init, NSG 80/443 + 22-from-your-IP
+# gen1 B-series (B1ms/B2s) is often NotAvailableForSubscription; the script preflights
+# the SKU and lists amd64 alternatives. Override with VM_SIZE=... if needed.
 # Spot (cheaper, evictable):  SPOT=1 ./infra/provision-vm.sh
 ```
 Note the printed public IP; point your DNS at it.
