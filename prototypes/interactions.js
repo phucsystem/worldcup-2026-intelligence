@@ -94,6 +94,30 @@ document.addEventListener('DOMContentLoaded', function () {
       el.outerHTML = '<span class="' + el.className + ' crest" style="background:' + (el.dataset.color || '#1e3157') + '">' + label + '</span>';
     }
   });
+
+  /* Faded two-team flag backdrop, reused for both a match hero and the whole page.
+     - data-flag-bg        → inset layer inside a positioned container (the hero)
+     - data-flag-bg-page   → fixed, full-viewport layer behind all page content
+     Both read data-home/data-away (FIFA codes): home flag fills the left, away the
+     right, with a dark tint over the top for readability. */
+  function buildFlagLayer(home, away, className, host, prepend) {
+    if (!FLAGS[home] && !FLAGS[away]) return;
+    function panel(code, side) {
+      if (!FLAGS[code]) return '';
+      return '<div class="flag-bg-half ' + side + '"><svg viewBox="0 0 30 20" preserveAspectRatio="xMidYMid slice">' + FLAGS[code] + '</svg></div>';
+    }
+    const wrap = document.createElement('div');
+    wrap.className = className;
+    wrap.setAttribute('aria-hidden', 'true');
+    wrap.innerHTML = panel(home, 'home') + panel(away, 'away') + '<div class="flag-bg-tint"></div>';
+    host.insertBefore(wrap, prepend ? host.firstChild : null);
+  }
+  document.querySelectorAll('[data-flag-bg]').forEach(function (el) {
+    buildFlagLayer(el.dataset.home, el.dataset.away, 'flag-bg', el, true);
+  });
+  document.querySelectorAll('[data-flag-bg-page]').forEach(function (el) {
+    buildFlagLayer(el.dataset.home, el.dataset.away, 'page-flag-bg', document.body, true);
+  });
 });
 
 /* Live countdown clocks for upcoming matches.
@@ -195,9 +219,7 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 })();
 
-/* S-01 Latest Results: "Display in Groups" toggle.
-   Flat (date) view keeps DOM order; grouped view switches the list to flexbox so
-   the precomputed `order` clusters rows under their group header. */
+/* S-01 Latest Results: "Display in Groups" toggle. */
 document.addEventListener('DOMContentLoaded', function () {
   const widget = document.querySelector('[data-rw]');
   if (!widget) return;
@@ -207,25 +229,99 @@ document.addEventListener('DOMContentLoaded', function () {
   if (!input || !list) return;
 
   const rows = Array.prototype.slice.call(list.querySelectorAll('.match-row'));
-  const headers = Array.prototype.slice.call(list.querySelectorAll('.rw-group-header'));
+  const groupHeaders = Array.prototype.slice.call(list.querySelectorAll('.rw-group-header'));
+  const monthRank = {
+    January: 1,
+    February: 2,
+    March: 3,
+    April: 4,
+    May: 5,
+    June: 6,
+    July: 7,
+    August: 8,
+    September: 9,
+    October: 10,
+    November: 11,
+    December: 12
+  };
+
+  function getDateRank(dateLabel) {
+    const dateParts = dateLabel.replace(',', '').split(' ');
+    const day = Number(dateParts[1] || 0);
+    const month = monthRank[dateParts[2]] || 0;
+    return 20260000 + month * 100 + day;
+  }
 
   const groups = [];
-  rows.forEach(function (r) {
-    if (groups.indexOf(r.dataset.group) === -1) groups.push(r.dataset.group);
+  rows.forEach(function (row) {
+    if (groups.indexOf(row.dataset.group) === -1) groups.push(row.dataset.group);
   });
-  groups.sort();
 
-  headers.forEach(function (h) { h.style.order = groups.indexOf(h.dataset.group) * 100; });
-  const counters = {};
-  rows.forEach(function (r) {
-    const gi = groups.indexOf(r.dataset.group);
-    counters[gi] = (counters[gi] || 0) + 1;
-    r.style.order = gi * 100 + counters[gi];
+  groups.sort(function (firstGroup, secondGroup) {
+    const firstLatestDate = Math.max.apply(null, rows
+      .filter(function (row) { return row.dataset.group === firstGroup; })
+      .map(function (row) { return getDateRank(row.dataset.date); }));
+    const secondLatestDate = Math.max.apply(null, rows
+      .filter(function (row) { return row.dataset.group === secondGroup; })
+      .map(function (row) { return getDateRank(row.dataset.date); }));
+    return secondLatestDate - firstLatestDate || firstGroup.localeCompare(secondGroup);
+  });
+
+  const dates = [];
+  rows.forEach(function (row) {
+    if (dates.indexOf(row.dataset.date) === -1) dates.push(row.dataset.date);
+  });
+  dates.sort(function (firstDate, secondDate) {
+    return getDateRank(secondDate) - getDateRank(firstDate);
+  });
+
+  const dateHeaders = dates.map(function (dateLabel) {
+    const dateHeader = document.createElement('div');
+    dateHeader.className = 'rw-date-header';
+    dateHeader.dataset.date = dateLabel;
+    dateHeader.textContent = dateLabel;
+    list.appendChild(dateHeader);
+    return dateHeader;
   });
 
   function apply() {
     widget.classList.toggle('grouped', input.checked);
+    widget.classList.toggle('has-date-headers', !input.checked);
     if (stateLbl) stateLbl.textContent = input.checked ? 'On' : 'Off';
+
+    if (input.checked) {
+      groupHeaders.forEach(function (groupHeader) {
+        groupHeader.style.order = groups.indexOf(groupHeader.dataset.group) * 100;
+      });
+      const groupCounters = {};
+      rows
+        .slice()
+        .sort(function (firstRow, secondRow) {
+          return getDateRank(secondRow.dataset.date) - getDateRank(firstRow.dataset.date);
+        })
+        .forEach(function (row) {
+          const groupIndex = groups.indexOf(row.dataset.group);
+          groupCounters[groupIndex] = (groupCounters[groupIndex] || 0) + 1;
+          row.style.order = groupIndex * 100 + groupCounters[groupIndex];
+        });
+      return;
+    }
+
+    dateHeaders.forEach(function (dateHeader) {
+      dateHeader.style.order = dates.indexOf(dateHeader.dataset.date) * 100;
+    });
+    const dateCounters = {};
+    rows
+      .slice()
+      .sort(function (firstRow, secondRow) {
+        const dateDiff = getDateRank(secondRow.dataset.date) - getDateRank(firstRow.dataset.date);
+        return dateDiff || firstRow.dataset.group.localeCompare(secondRow.dataset.group);
+      })
+      .forEach(function (row) {
+        const dateIndex = dates.indexOf(row.dataset.date);
+        dateCounters[dateIndex] = (dateCounters[dateIndex] || 0) + 1;
+        row.style.order = dateIndex * 100 + dateCounters[dateIndex];
+      });
   }
   input.addEventListener('change', apply);
   apply();

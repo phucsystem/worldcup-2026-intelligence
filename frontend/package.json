@@ -26,5 +26,9 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^2.1.9"
+  },
+  "optionalDependencies": {
+    "@next/swc-darwin-x64": "^16.2.9",
+    "lightningcss-darwin-x64": "^1.32.0"
   }
 }

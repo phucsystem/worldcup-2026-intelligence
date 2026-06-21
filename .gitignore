@@ -2,6 +2,9 @@
 .env
 .env.*
 !.env.example
+# cloud credential dumps (never commit)
+docs/az_crendetials.json
+*credentials*.json
 
 # ---- Python (backend) ----
 __pycache__/
