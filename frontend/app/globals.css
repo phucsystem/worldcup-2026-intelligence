@@ -269,11 +269,19 @@ body {
   flex-shrink: 0;
   text-decoration: none;
 }
+.nav-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
 .nav-links {
   display: flex;
   gap: var(--space-2);
   align-items: center;
   overflow-x: auto;
+  min-width: 0;
 }
 .nav-links::-webkit-scrollbar { display: none; }
 .nav-link {
@@ -288,6 +296,17 @@ body {
 }
 .nav-link:hover { color: var(--text-primary); background: var(--surface-elevated); }
 .nav-link.active { color: #fff; background: var(--primary); }
+.coffee-button {
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.coffee-button .bmc-btn {
+  min-width: 168px;
+  height: 40px;
+}
 
 /* ---- S-01 home shell ---- */
 .home-shell {
@@ -1217,7 +1236,10 @@ a.next-match.is-live:hover {
   .main-content { padding: var(--space-6) var(--space-3) var(--space-12); }
   .section-title { margin-top: var(--space-8); }
   .nav-inner { padding: 0 var(--space-3); gap: var(--space-2); }
+  .nav-actions { gap: var(--space-2); }
   .nav-link { padding: 8px 10px; }
+  .coffee-button .bmc-btn { min-width: 132px; height: 38px; }
+  .coffee-button .bmc-btn-text { font-size: 15px !important; }
   .changelog { padding-left: var(--space-6); }
   .changelog-entry::before { left: calc(-1 * var(--space-6) + 2px); }
   .cl-card { padding: var(--space-4); }

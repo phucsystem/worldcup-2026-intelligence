@@ -2,6 +2,10 @@
 
 What's shipping on the World Cup 2026 Intelligence platform. Newest first.
 
+## v0.6.0 — 21 Jun 2026
+
+- **Added** — Official Buy Me a Coffee button in the header for visitors who want to back the project.
+
 ## v0.5.0 — 21 Jun 2026
 
 - **Added** — Logs console: operators can inspect persisted line-level app logs from the dashboard.
