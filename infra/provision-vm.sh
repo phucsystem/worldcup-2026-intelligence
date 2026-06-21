@@ -48,7 +48,10 @@ if [[ "${SPOT:-0}" == "1" ]]; then
   echo ">> Spot enabled (eviction: Deallocate)"
 fi
 
-az vm create \
+# Capture output so a QuotaExceeded/SkuNotAvailable ARM error surfaces as a clear
+# message instead of azure-cli's raw Python traceback (it crashes formatting it).
+VM_LOG="$(mktemp)"; trap 'rm -f "$VM_LOG"' EXIT
+if ! az vm create \
   -g "$RG" -n "$VM_NAME" \
   --image "$IMAGE" --size "$VM_SIZE" \
   --admin-username "$ADMIN_USER" \
@@ -59,7 +62,21 @@ az vm create \
   --public-ip-sku Standard \
   --nsg-rule NONE \
   ${SPOT_ARGS[@]+"${SPOT_ARGS[@]}"} \
-  -o table
+  -o table 2>&1 | tee "$VM_LOG"; then
+  echo "" >&2
+  if grep -q QuotaExceeded "$VM_LOG"; then
+    echo "ERROR: vCPU quota for $VM_SIZE's family is 0 in $LOCATION." >&2
+    echo "Request an increase: Azure Portal → Quotas → Compute → region '$LOCATION'" >&2
+    echo "→ search the VM family (e.g. 'Bsv2'/'Basv2') → New quota → 4. Re-run after approval." >&2
+    echo "Or try another region: LOCATION=<region> ./infra/provision-vm.sh" >&2
+  elif grep -q SkuNotAvailable "$VM_LOG"; then
+    echo "ERROR: $VM_SIZE is not available in $LOCATION. Re-run with VM_SIZE=... or LOCATION=..." >&2
+  else
+    echo "ERROR: az vm create failed. Last lines:" >&2
+    tail -15 "$VM_LOG" >&2
+  fi
+  exit 1
+fi
 
 # NONE above means the auto-created NSG has no inbound allow rules; we add exactly
 # the ones we want. SSH is locked to your current IP (the ONLY port-22 rule).
