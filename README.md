@@ -80,7 +80,7 @@ The frontend (SSR) reaches the API over the compose network via `API_BASE=http:/
 
 **Optional API keys** (for live data + brief generation): create `.env` at the repo root with `API_FOOTBALL_KEY` and `DEEPSEEK_API_KEY`; compose passes them to the `backend` service. Without them, the site still runs and shows the seeded standings (briefs list stays empty).
 
-**Real data on the free API-Football plan:** season 2026 requires a paid plan; the free plan covers 2021–2023. Set `API_FOOTBALL_SEASON=2022` in `.env` to populate the DB with the real Qatar 2022 World Cup (64 matches, 8 groups), then trigger a collect:
+**Real data:** the project runs on a paid API-Football plan, so season 2026 (the live World Cup) — including match statistics like xG, shots, and possession — is available directly; the default `API_FOOTBALL_SEASON=2026` works as-is. On a free plan (which covers 2021–2023 only and omits some statistics), set `API_FOOTBALL_SEASON=2022` in `.env` to populate the DB with the real Qatar 2022 World Cup (64 matches, 8 groups) instead. Either way, trigger a collect:
 
 ```bash
 docker compose exec backend python -m app.data.collect --date $(date +%F)
