@@ -166,8 +166,10 @@ jobs:
       - name: Install Robot Framework + Browser
         run: |
           pip install -r e2e/requirements.txt
-          rfbrowser init --skip-browsers || rfbrowser init
-          npx --yes playwright install --with-deps chromium
+          # Downloads Chromium into the Browser library's own playwright-core.
+          rfbrowser init chromium
+          # System libraries for headless Chromium on the Linux runner.
+          sudo npx --yes playwright install-deps chromium || true
 
       - name: Run e2e suites
         working-directory: e2e
