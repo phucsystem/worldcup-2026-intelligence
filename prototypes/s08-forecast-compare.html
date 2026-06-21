@@ -1,0 +1,166 @@
+<!--
+  Comparison: Forecast card — CURRENT vs PROPOSED "ghosted placeholder" state.
+  Purpose: review the roadmap-only forecast block as a clearly-unbuilt preview,
+           so a fabricated precise number is never presented as a working result.
+  Uses the real design system (styles.css + components.css). New ghost-state
+  classes are scoped under .fc-ghost in the <style> block below.
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Forecast card — current vs proposed · WC26 Intelligence</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="components.css">
+  <style>
+    .cmp-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-6); align-items: start; }
+    @media (max-width: 860px) { .cmp-wrap { grid-template-columns: 1fr; } }
+    .cmp-col > h3 { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 var(--space-3); }
+    .cmp-col.before > h3 { color: var(--status-loss); }
+    .cmp-col.after  > h3 { color: var(--status-live); }
+    .cmp-caption { font-size: 13px; line-height: 1.5; color: var(--text-muted); margin: var(--space-3) 0 0; }
+
+    /* ---- Proposed ghosted-placeholder forecast state ---- */
+    .fc-ghost .fc-title { color: var(--text-secondary); }
+    .fc-ghost .fc-roadmap-banner {
+      display: flex; align-items: center; gap: var(--space-2);
+      font-size: 12px; line-height: 1.5; color: var(--text-secondary);
+      background: rgba(244, 183, 64, 0.10);
+      border: 1px solid rgba(244, 183, 64, 0.30);
+      border-radius: var(--radius-input);
+      padding: var(--space-2) var(--space-3);
+      margin-bottom: var(--space-4);
+    }
+    .fc-ghost .fc-roadmap-banner svg { flex-shrink: 0; }
+
+    /* Ghosted bar: equal, desaturated, no fabricated numbers */
+    .fc-ghost .fc-bar { opacity: 0.5; filter: grayscale(0.7); }
+    .fc-ghost .fc-seg { background: var(--surface-elevated); color: var(--text-muted); font-weight: 700; letter-spacing: 0.06em; }
+    .fc-ghost .fc-seg::after { content: ""; }
+    .fc-ghost .fc-legend { color: var(--text-muted); }
+    .fc-ghost .fc-key { background: var(--text-muted) !important; opacity: 0.6; }
+
+    /* Locked verdict preview — no machine-authored prose shown as fact */
+    .fc-ghost .fc-verdict-locked {
+      margin-top: var(--space-6); padding-top: var(--space-6);
+      border-top: 1px dashed rgba(244, 183, 64, 0.3);
+    }
+    .fc-ghost .fc-lock-row { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); }
+    .fc-ghost .fc-lock-row .fc-title { font-size: 17px; font-weight: 800; color: var(--text-secondary); }
+    .fc-ghost .skel { background: linear-gradient(90deg, rgba(169,182,212,0.08) 25%, rgba(169,182,212,0.16) 50%, rgba(169,182,212,0.08) 75%); background-size: 200% 100%; border-radius: 4px; height: 11px; margin: 9px 0; }
+    .fc-ghost .skel.w90 { width: 90%; } .fc-ghost .skel.w70 { width: 70%; } .fc-ghost .skel.w80 { width: 80%; }
+    @media (prefers-reduced-motion: no-preference) { .fc-ghost .skel { animation: skelShimmer 1.6s linear infinite; } }
+    @keyframes skelShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+    /* Factor list stays — reframed as "what the engine will weigh", no lean pills coloured as a result */
+    .fc-ghost .ff-lean { color: var(--text-muted) !important; background: rgba(107,122,158,0.18) !important; }
+  </style>
+</head>
+<body class="cjx-usage">
+  <div class="app-layout">
+    <nav class="sidebar">
+      <div class="nav-inner">
+        <a class="brand" href="s08-match-preview.html"><img class="brand-logo" src="logo.svg" alt="WC26 Intelligence"></a>
+        <div class="nav-links"><a class="nav-link" href="s08-match-preview.html">‹ Back to preview</a></div>
+      </div>
+    </nav>
+
+    <main class="main-content standings-wide reading analysis" style="max-width:1120px">
+      <h2 class="section-title" style="margin-top:var(--space-6)">Forecast card — current vs proposed</h2>
+      <p class="summary-deck" style="font-size:15px;margin:0 0 var(--space-8)">Same component, two treatments. The proposal keeps the forecast as a leading, on-brand block but renders it as an obviously-unbuilt preview — no fabricated 52% and no machine-authored verdict presented as fact — until the prediction engine ships.</p>
+
+      <div class="cmp-wrap">
+        <!-- ================= BEFORE ================= -->
+        <div class="cmp-col before">
+          <h3>Current</h3>
+          <section class="forecast-card" aria-label="Current forecast treatment">
+            <div class="fc-head">
+              <h2 class="fc-title">Win probability</h2>
+              <span class="fc-tag">Model preview · experimental</span>
+            </div>
+            <div class="fc-bar" role="img" aria-label="Illustrative win probability: Switzerland 52 percent, draw 27 percent, Cameroon 21 percent">
+              <span class="fc-seg home lead" style="width:52%">52%</span>
+              <span class="fc-seg draw" style="width:27%">27%</span>
+              <span class="fc-seg away" style="width:21%">21%</span>
+            </div>
+            <div class="fc-legend">
+              <span class="lead"><i class="fc-key home"></i> Switzerland 52% · most likely</span>
+              <span><i class="fc-key draw"></i> Draw 27%</span>
+              <span><i class="fc-key away"></i> Cameroon 21%</span>
+            </div>
+            <div class="fc-verdict">
+              <div class="fc-verdict-head">
+                <span class="fc-verdict-pick"><span class="flag" data-flag="ch" data-code="SUI"></span> Projected verdict: Switzerland to edge it</span>
+                <span class="fc-verdict-conf">Lean · low confidence</span>
+              </div>
+              <p>The signals tilt Switzerland's way. They are the more complete side — tighter at the back, more controlled in midfield through Xhaka, and they only need a draw to take second.</p>
+            </div>
+            <p class="fc-note">Illustrative figures only — <strong>not a prediction or guarantee</strong>.</p>
+          </section>
+          <p class="cmp-caption">A precise 52% and a confident verdict are the first things the eye lands on. Even with the disclaimer, the number anchors and the prose reads as fact — which conflicts with the "no LLM-invented predictions as fact" principle.</p>
+        </div>
+
+        <!-- ================= AFTER ================= -->
+        <div class="cmp-col after">
+          <h3>Proposed · ghosted placeholder</h3>
+          <section class="forecast-card fc-ghost" aria-label="Forecast — roadmap feature, not yet available">
+            <div class="fc-head">
+              <h2 class="fc-title">Win probability</h2>
+              <span class="fc-tag">Roadmap · not yet live</span>
+            </div>
+
+            <div class="fc-roadmap-banner">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>
+              <span>A data-driven prediction engine is coming. Until it ships, no probabilities are generated — the factual analysis below is what's live today.</span>
+            </div>
+
+            <div class="fc-bar" role="img" aria-label="Win probability not yet available — prediction engine on roadmap">
+              <span class="fc-seg" style="width:40%">SUI</span>
+              <span class="fc-seg" style="width:30%">Draw</span>
+              <span class="fc-seg" style="width:30%">CMR</span>
+            </div>
+            <div class="fc-legend">
+              <span><i class="fc-key"></i> Switzerland — %</span>
+              <span><i class="fc-key"></i> Draw — %</span>
+              <span><i class="fc-key"></i> Cameroon — %</span>
+            </div>
+
+            <div class="fc-verdict-locked">
+              <div class="fc-lock-row">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"></rect><path d="M8 11V8a4 4 0 0 1 8 0v3"></path></svg>
+                <span class="fc-title">Projected verdict</span>
+                <span class="fc-verdict-conf" style="color:var(--text-muted);background:rgba(107,122,158,0.18)">Locked until engine ships</span>
+              </div>
+              <div class="skel w90"></div>
+              <div class="skel w80"></div>
+              <div class="skel w70"></div>
+            </div>
+
+            <p class="fc-subhead">What the engine will weigh</p>
+            <p class="fc-intro">When it ships, these signals — computed deterministically, then narrated — will produce each probability. Shown here so the methodology is transparent in advance.</p>
+            <ul class="fc-factors">
+              <li class="fc-factor"><span class="ff-name">Recent form</span><span class="ff-lean">Signal</span><span class="ff-why">Win/draw/loss trend over recent matches, recency-weighted.</span></li>
+              <li class="fc-factor"><span class="ff-name">Head-to-head</span><span class="ff-lean">Signal</span><span class="ff-why">Historical results between the two sides.</span></li>
+              <li class="fc-factor"><span class="ff-name">What's at stake</span><span class="ff-lean">Signal</span><span class="ff-why">Qualification incentives and must-win pressure.</span></li>
+              <li class="fc-factor"><span class="ff-name">Squad availability</span><span class="ff-lean">Signal</span><span class="ff-why">Injuries, suspensions, rotation.</span></li>
+              <li class="fc-factor"><span class="ff-name">Venue &amp; rest</span><span class="ff-lean">Signal</span><span class="ff-why">Neutral/host advantage and rest-day differential.</span></li>
+            </ul>
+
+            <p class="fc-note">No probabilities, verdict, or factor weights are produced by any model yet. This block is a transparent preview of a roadmap feature — <strong>not a prediction</strong>.</p>
+          </section>
+          <p class="cmp-caption">Desaturated bar with no fake number, a locked/skeleton verdict, and factors reframed as "what the engine will weigh." Reads honestly as coming-soon; the live factual sections become the page's real substance.</p>
+        </div>
+      </div>
+    </main>
+
+    <footer class="app-footer">
+      <div class="footer-inner">
+        <span>Data source: API-Football (fixtures, standings, statistics).</span>
+        <span>Comparison mockup · not a live screen.</span>
+      </div>
+    </footer>
+  </div>
+  <script src="interactions.js"></script>
+</body>
+</html>
