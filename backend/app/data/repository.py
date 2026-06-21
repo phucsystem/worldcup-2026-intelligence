@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
-from app.data.models import Match, StandingRow
+from app.data.models import Match, StandingRow, Team, TopScorer
 
 # Mirror migration 0001 schema — lightweight Core Table objects
 _metadata = sa.MetaData()
@@ -23,9 +23,33 @@ matches_table = sa.Table(
     sa.Column("home_score", sa.Integer),
     sa.Column("away_score", sa.Integer),
     sa.Column("status", sa.String),
+    sa.Column("elapsed", sa.Integer),
     sa.Column("kickoff_utc", sa.DateTime(timezone=True)),
     sa.Column("events_json", sa.JSON),
+    sa.Column("stage", sa.String),
     sa.Column("updated_at", sa.DateTime(timezone=True)),
+)
+
+teams_table = sa.Table(
+    "teams",
+    _metadata,
+    sa.Column("team_id", sa.Integer, primary_key=True),
+    sa.Column("name", sa.String, nullable=False, unique=True),
+    sa.Column("logo_url", sa.String),
+    sa.Column("group_name", sa.String),
+    sa.Column("updated_at", sa.DateTime(timezone=True)),
+)
+
+top_scorers_table = sa.Table(
+    "top_scorers",
+    _metadata,
+    sa.Column("id", sa.Integer, primary_key=True, autoincrement=True),
+    sa.Column("season", sa.Integer, nullable=False),
+    sa.Column("player_id", sa.Integer, nullable=False),
+    sa.Column("name", sa.String),
+    sa.Column("photo_url", sa.String),
+    sa.Column("team", sa.String),
+    sa.Column("goals", sa.Integer),
 )
 
 standings_table = sa.Table(
@@ -60,6 +84,7 @@ articles_table = sa.Table(
     sa.Column("status", sa.String, server_default="draft"),
     sa.Column("model_used", sa.String),
     sa.Column("created_at", sa.DateTime(timezone=True)),
+    sa.Column("intelligence", sa.JSON),
 )
 
 agent_runs_table = sa.Table(
@@ -88,6 +113,21 @@ def make_session_factory(engine=None) -> sessionmaker:
     return sessionmaker(bind=engine)
 
 
+def prune_matches_not_in(session: Session, keep_fixture_ids: list[int]) -> int:
+    """Delete match rows whose fixture_id is not in the current fetch.
+
+    Keeps the table scoped to the active season/league so stale data from a
+    previous season config (e.g. a prior 2022 collect) can never linger and
+    leak into standings or the brief. Returns the number of rows removed."""
+    if not keep_fixture_ids:
+        return 0
+    result = session.execute(
+        matches_table.delete().where(matches_table.c.fixture_id.notin_(keep_fixture_ids))
+    )
+    session.commit()
+    return result.rowcount or 0
+
+
 def upsert_matches(session: Session, matches: list[Match]) -> None:
     if not matches:
         return
@@ -103,8 +143,10 @@ def upsert_matches(session: Session, matches: list[Match]) -> None:
                 home_score=m.home_score,
                 away_score=m.away_score,
                 status=m.status,
+                elapsed=m.elapsed,
                 kickoff_utc=m.kickoff_utc,
                 events_json=m.events,
+                stage=m.stage,
                 updated_at=now,
             )
             .on_conflict_do_update(
@@ -116,8 +158,10 @@ def upsert_matches(session: Session, matches: list[Match]) -> None:
                     "home_score": m.home_score,
                     "away_score": m.away_score,
                     "status": m.status,
+                    "elapsed": m.elapsed,
                     "kickoff_utc": m.kickoff_utc,
                     "events_json": m.events,
+                    "stage": m.stage,
                     "updated_at": now,
                 },
             )
@@ -176,6 +220,62 @@ def upsert_standings_snapshot(
     session.commit()
 
 
+def upsert_teams(session: Session, teams: list[Team]) -> None:
+    if not teams:
+        return
+    now = datetime.now(tz=timezone.utc)
+    for t in teams:
+        stmt = (
+            pg_insert(teams_table)
+            .values(
+                team_id=t.team_id,
+                name=t.name,
+                logo_url=t.logo_url,
+                group_name=t.group_name,
+                updated_at=now,
+            )
+            .on_conflict_do_update(
+                index_elements=["team_id"],
+                set_={
+                    "name": t.name,
+                    "logo_url": t.logo_url,
+                    "group_name": t.group_name,
+                    "updated_at": now,
+                },
+            )
+        )
+        session.execute(stmt)
+    session.commit()
+
+
+def upsert_top_scorers(session: Session, season: int, rows: list[TopScorer]) -> None:
+    if not rows:
+        return
+    for r in rows:
+        stmt = (
+            pg_insert(top_scorers_table)
+            .values(
+                season=season,
+                player_id=r.player_id,
+                name=r.name,
+                photo_url=r.photo_url,
+                team=r.team,
+                goals=r.goals,
+            )
+            .on_conflict_do_update(
+                constraint="uq_top_scorers_season_player",
+                set_={
+                    "name": r.name,
+                    "photo_url": r.photo_url,
+                    "team": r.team,
+                    "goals": r.goals,
+                },
+            )
+        )
+        session.execute(stmt)
+    session.commit()
+
+
 def upsert_article(
     session: Session,
     article: dict[str, Any],
@@ -192,6 +292,7 @@ def upsert_article(
             status=status,
             model_used="deepseek-chat",
             created_at=datetime.now(tz=timezone.utc),
+            intelligence=article.get("intelligence"),
         )
         .on_conflict_do_update(
             index_elements=["brief_date"],
@@ -201,6 +302,7 @@ def upsert_article(
                 "body_md": article.get("body_md"),
                 "status": status,
                 "model_used": "deepseek-chat",
+                "intelligence": article.get("intelligence"),
             },
         )
     )

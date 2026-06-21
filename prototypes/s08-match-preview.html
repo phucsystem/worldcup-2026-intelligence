@@ -1,0 +1,217 @@
+<!--
+  Screen: S-08 Upcoming Match Analysis (factual preview + clearly-labelled forecast)
+  CJX Stage: Anticipate / Verify -> cjx-usage
+  Scope: one upcoming match — countdown, form, head-to-head, qualification stakes,
+         key players, "what to watch". A forecast block is included but visually
+         QUARANTINED and badged experimental (the prediction engine is roadmap only;
+         product principle: no LLM-invented predictions presented as fact).
+  Source: brainstorm 2026-06-20 (add match analysis pages)
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Switzerland vs Cameroon · Match Preview · WC26 Intelligence</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="components.css">
+</head>
+<body class="cjx-usage">
+  <div class="app-layout">
+    <nav class="sidebar">
+      <div class="nav-inner">
+        <a class="brand" href="s01-brief-list.html">
+          <img class="brand-logo" src="logo.svg" alt="WC26 Intelligence">
+        </a>
+        <div class="nav-links">
+          <a class="nav-link" href="s01-brief-list.html">Today</a>
+          <a class="nav-link" href="s03-standings.html">Standings</a>
+          <a class="nav-link" href="s05-upcoming-knockout.html">Fixtures</a>
+          <a class="nav-link" href="s04-archive.html">Archive</a>
+          <a class="nav-link" href="s06-changelog.html">Changelog</a>
+        </div>
+      </div>
+    </nav>
+
+    <main class="main-content reading analysis" data-cjx-entrance>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);margin-bottom:var(--space-6)">
+        <a class="back-link" href="s05-upcoming-knockout.html">‹ Back to fixtures</a>
+        <span class="meta-label">Kickoff times in AEST</span>
+      </div>
+
+      <!-- Matchup hero (reuses the home "Up next" banner styling, as a non-link block) -->
+      <div class="next-match" aria-label="Upcoming: Switzerland vs Cameroon, kicks off today 20:00 AEST, Group G">
+        <span class="nm-eyebrow"><span class="dot"></span> Up next · Group G decider</span>
+        <div class="nm-body">
+          <span class="nm-side"><span class="flag" data-flag="ch" data-code="SUI"></span> Switzerland</span>
+          <span class="nm-vs">VS</span>
+          <span class="nm-side">Cameroon <span class="flag" data-flag="cm" data-code="CMR"></span></span>
+        </div>
+        <div class="nm-meta">Today · 20:00 AEST · NRG Stadium, Houston</div>
+        <div class="nm-countdown-wrap">
+          <span class="nm-cd-label">Kicks off in</span>
+          <div class="countdown" data-countdown data-offset-min="237" aria-label="Time until kickoff"></div>
+        </div>
+      </div>
+
+      <!-- Recent form -->
+      <h2 class="section-title">Recent form</h2>
+      <div class="form-compare">
+        <div class="form-side">
+          <div class="fs-team"><span class="flag" data-flag="ch" data-code="SUI"></span> Switzerland</div>
+          <div class="fs-sub">Last 5 · 2W 2D 1L</div>
+          <div class="fs-form-line" role="img" aria-label="Switzerland form, oldest to newest: win, draw, win, loss, draw">
+            <span class="fs-pip w">W</span><span class="fs-pip d">D</span><span class="fs-pip w">W</span><span class="fs-pip l">L</span><span class="fs-pip d">D</span>
+          </div>
+        </div>
+        <div class="form-side">
+          <div class="fs-team"><span class="flag" data-flag="cm" data-code="CMR"></span> Cameroon</div>
+          <div class="fs-sub">Last 5 · 1W 1D 3L</div>
+          <div class="fs-form-line" role="img" aria-label="Cameroon form, oldest to newest: loss, draw, loss, win, loss">
+            <span class="fs-pip l">L</span><span class="fs-pip d">D</span><span class="fs-pip l">L</span><span class="fs-pip w">W</span><span class="fs-pip l">L</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Head to head -->
+      <h2 class="section-title">Head-to-head</h2>
+      <div class="h2h-card">
+        <div class="h2h-summary">
+          <div class="h2h-count home"><span class="hc-num">2</span><span class="hc-lbl">Switzerland</span></div>
+          <div class="h2h-count draw"><span class="hc-num">1</span><span class="hc-lbl">Draws</span></div>
+          <div class="h2h-count away"><span class="hc-num">1</span><span class="hc-lbl">Cameroon</span></div>
+        </div>
+        <div class="h2h-bar" role="img" aria-label="Last 4 meetings: Switzerland 2 wins, 1 draw, Cameroon 1 win">
+          <span class="h2h-seg home" style="width:50%"></span>
+          <span class="h2h-seg draw" style="width:25%"></span>
+          <span class="h2h-seg away" style="width:25%"></span>
+        </div>
+        <ul class="h2h-list">
+          <li><span class="h2h-date">Nov 2022</span><span class="h2h-comp">World Cup group</span><span class="h2h-res">SUI 1–0 CMR</span></li>
+          <li><span class="h2h-date">Mar 2018</span><span class="h2h-comp">Friendly</span><span class="h2h-res">CMR 2–2 SUI</span></li>
+          <li><span class="h2h-date">Jun 2014</span><span class="h2h-comp">Friendly</span><span class="h2h-res">SUI 3–1 CMR</span></li>
+          <li><span class="h2h-date">Nov 2009</span><span class="h2h-comp">Friendly</span><span class="h2h-res">CMR 2–1 SUI</span></li>
+        </ul>
+      </div>
+
+      <!-- Qualification stakes -->
+      <h2 class="section-title">What's at stake</h2>
+      <article class="stake-card group-g">
+        <header class="sk-head">
+          <span class="sk-group">Group G · final round</span>
+          <span class="sk-tag live">Decides 2nd</span>
+        </header>
+        <p class="sk-line">Brazil are already through as winners. Switzerland take second with a win; Cameroon must win to overtake Serbia and keep their hopes alive, while a draw favours the Swiss.</p>
+        <ul class="sk-table">
+          <li><span class="sk-pos">1</span><span class="sk-team"><span class="flag" data-flag="br" data-code="BRA"></span> Brazil</span><span class="sk-pts">9 pts</span><span class="sk-note qualified">Through</span></li>
+          <li><span class="sk-pos">2</span><span class="sk-team"><span class="flag" data-flag="ch" data-code="SUI"></span> Switzerland</span><span class="sk-pts">4 pts</span><span class="sk-note contention">Win = 2nd</span></li>
+          <li><span class="sk-pos">3</span><span class="sk-team"><span class="flag" data-flag="rs" data-code="SRB"></span> Serbia</span><span class="sk-pts">3 pts</span><span class="sk-note contention">Awaiting result</span></li>
+          <li><span class="sk-pos">4</span><span class="sk-team"><span class="flag" data-flag="cm" data-code="CMR"></span> Cameroon</span><span class="sk-pts">1 pt</span><span class="sk-note out">Must win</span></li>
+        </ul>
+      </article>
+
+      <!-- Key players -->
+      <h2 class="section-title">Players to watch</h2>
+      <div class="kp-wrap">
+        <div class="kp-col">
+          <div class="kp-head"><span class="flag" data-flag="ch" data-code="SUI"></span> Switzerland</div>
+          <div class="kp-player">
+            <span class="kp-avatar" style="background:#D52B1E">GX</span>
+            <div class="kp-info"><div class="kp-name">Granit Xhaka</div><div class="kp-role">Midfield · Captain</div></div>
+          </div>
+          <div class="kp-player">
+            <span class="kp-avatar" style="background:#D52B1E">BE</span>
+            <div class="kp-info"><div class="kp-name">Breel Embolo</div><div class="kp-role">Forward · 2 goals</div></div>
+          </div>
+          <div class="kp-player">
+            <span class="kp-avatar" style="background:#D52B1E">MA</span>
+            <div class="kp-info"><div class="kp-name">Manuel Akanji</div><div class="kp-role">Defender</div></div>
+          </div>
+        </div>
+        <div class="kp-col">
+          <div class="kp-head"><span class="flag" data-flag="cm" data-code="CMR"></span> Cameroon</div>
+          <div class="kp-player">
+            <span class="kp-avatar" style="background:#007A5E">VA</span>
+            <div class="kp-info"><div class="kp-name">Vincent Aboubakar</div><div class="kp-role">Forward · Captain</div></div>
+          </div>
+          <div class="kp-player">
+            <span class="kp-avatar" style="background:#007A5E">BM</span>
+            <div class="kp-info"><div class="kp-name">Bryan Mbeumo</div><div class="kp-role">Forward · 1 goal</div></div>
+          </div>
+          <div class="kp-player">
+            <span class="kp-avatar" style="background:#007A5E">AO</span>
+            <div class="kp-info"><div class="kp-name">André Onana</div><div class="kp-role">Goalkeeper</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- What to watch (factual narrative) -->
+      <h2 class="section-title">What to watch</h2>
+      <div class="analysis-note">
+        <span class="an-eyebrow">Storylines</span>
+        <p>Switzerland will look to control midfield through Xhaka and see the game out — a point guarantees them second place. Expect a measured, possession-based approach with Embolo stretching the Cameroon back line.</p>
+        <p>Cameroon must commit numbers forward to chase the win they need, which should open space in behind. Aboubakar's movement and Onana's distribution will be key if they are to force the issue and overtake Serbia.</p>
+      </div>
+
+      <!-- Forecast: EXPERIMENTAL, quarantined, model-preview only -->
+      <h2 class="section-title">Forecast</h2>
+      <section class="forecast-card" aria-label="Experimental win-probability forecast — model preview, illustrative only, not a guarantee">
+        <div class="fc-head">
+          <h2 class="fc-title">Win probability</h2>
+          <span class="fc-tag">Model preview · experimental</span>
+        </div>
+        <div class="fc-bar" role="img" aria-label="Illustrative win probability: Switzerland 52 percent, draw 27 percent, Cameroon 21 percent">
+          <span class="fc-seg home lead" style="width:52%">52%</span>
+          <span class="fc-seg draw" style="width:27%">27%</span>
+          <span class="fc-seg away" style="width:21%">21%</span>
+        </div>
+        <div class="fc-legend">
+          <span class="lead"><i class="fc-key home"></i> Switzerland 52% · most likely</span>
+          <span><i class="fc-key draw"></i> Draw 27%</span>
+          <span><i class="fc-key away"></i> Cameroon 21%</span>
+        </div>
+
+        <p class="fc-subhead">What drives this forecast</p>
+        <p class="fc-intro">Once the prediction engine ships, it will weigh the signals below to produce each probability. The lean shows which side a signal favours and why.</p>
+        <ul class="fc-factors">
+          <li class="fc-factor">
+            <span class="ff-name">Recent form</span>
+            <span class="ff-lean home">Favours SUI</span>
+            <span class="ff-why">Switzerland unbeaten in 4 of their last 5; Cameroon have lost 3 of 5.</span>
+          </li>
+          <li class="fc-factor">
+            <span class="ff-name">Head-to-head</span>
+            <span class="ff-lean home">Favours SUI</span>
+            <span class="ff-why">Switzerland have won 2 of the last 4 meetings, with 1 draw.</span>
+          </li>
+          <li class="fc-factor">
+            <span class="ff-name">What's at stake</span>
+            <span class="ff-lean away">Edge CMR</span>
+            <span class="ff-why">Cameroon must win and will attack; Switzerland can play for the draw they need.</span>
+          </li>
+          <li class="fc-factor">
+            <span class="ff-name">Squad availability</span>
+            <span class="ff-lean even">Even</span>
+            <span class="ff-why">Both sides near full strength; no major suspensions or injuries reported.</span>
+          </li>
+          <li class="fc-factor">
+            <span class="ff-name">Venue &amp; rest</span>
+            <span class="ff-lean even">Even</span>
+            <span class="ff-why">Neutral venue (NRG Stadium); identical rest days since matchday 2.</span>
+          </li>
+        </ul>
+
+        <p class="fc-note">Illustrative figures only — <strong>not a prediction or guarantee</strong>. A data-driven prediction engine is on the project roadmap; until it ships, both the percentages and the factor weightings above are placeholders and are not produced by any model yet.</p>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <div class="footer-inner">
+        <span>Data sources: FIFA official fixtures &amp; standings.</span>
+        <span>Kickoff times converted to Australia/Melbourne.</span>
+      </div>
+    </footer>
+  </div>
+  <script src="interactions.js"></script>
+</body>
+</html>

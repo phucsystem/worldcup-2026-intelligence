@@ -2,6 +2,8 @@ import type { StandingRow } from "@/lib/api";
 import PositionDelta from "@/components/position-delta";
 import QualificationBadge from "@/components/qualification-badge";
 import type { QualificationStatus } from "@/components/qualification-badge";
+import TeamFlag from "@/components/team-flag";
+import Sparkline from "@/components/sparkline";
 
 interface Props {
   groupName: string;
@@ -46,6 +48,7 @@ export default function StandingsTable({ groupName, rows }: Props) {
               <th scope="col" className="text-right px-3 py-3 font-medium" style={{ color: "#6B7A9E" }}>GA</th>
               <th scope="col" className="text-right px-3 py-3 font-medium" style={{ color: "#6B7A9E" }}>GD</th>
               <th scope="col" className="text-right px-3 py-3 font-medium" style={{ color: "#6B7A9E" }}>Pts</th>
+              <th scope="col" className="text-center px-3 py-3 font-medium" style={{ color: "#6B7A9E" }}>Form</th>
               <th scope="col" className="text-center px-3 py-3 font-medium" style={{ color: "#6B7A9E" }}>±</th>
             </tr>
           </thead>
@@ -65,7 +68,10 @@ export default function StandingsTable({ groupName, rows }: Props) {
                     </span>
                   </td>
                   <td className="px-4 py-3 font-medium" style={{ color: "#FFFFFF" }}>
-                    {row.team ?? "—"}
+                    <span className="flex items-center gap-2">
+                      <TeamFlag team={row.team} logo={row.logo} size={18} />
+                      {row.team ?? "—"}
+                    </span>
                   </td>
                   <td className="text-right px-3 py-3" style={{ color: "#A9B6D4" }}>{row.played ?? 0}</td>
                   <td className="text-right px-3 py-3" style={{ color: "#2BD37E" }}>{row.won ?? 0}</td>
@@ -77,6 +83,11 @@ export default function StandingsTable({ groupName, rows }: Props) {
                     {row.gd != null ? (row.gd > 0 ? `+${row.gd}` : row.gd) : 0}
                   </td>
                   <td className="text-right px-3 py-3 font-bold" style={{ color: "#FFFFFF" }}>{row.points ?? 0}</td>
+                  <td className="px-3 py-3">
+                    <span className="flex justify-center">
+                      <Sparkline results={row.recent_results ?? []} />
+                    </span>
+                  </td>
                   <td className="text-center px-3 py-3">
                     <PositionDelta position={row.position} prevPosition={row.prev_position} />
                   </td>

@@ -10,12 +10,26 @@ from pydantic import BaseModel
 from app.pipeline.state import BriefState
 
 
+class FixtureStake(BaseModel):
+    fixture_id: int
+    stake_text: str
+
+
+class GroupScenario(BaseModel):
+    group_name: str
+    tag: str
+    line: str
+
+
 class Intelligence(BaseModel):
     storylines: list[str]
     surprise_teams: list[str]
     underperformers: list[str]
     power_ranking: list[str]
     qualification_narrative: str
+    # Defaults keep the structured client tolerant of sparse/older responses.
+    fixture_stakes: list[FixtureStake] = []
+    group_scenarios: list[GroupScenario] = []
 
 
 def analyst_node(state: BriefState) -> BriefState:
@@ -35,13 +49,21 @@ def analyst_node(state: BriefState) -> BriefState:
     last_exc: Optional[Exception] = None
     new_in = new_out = 0
 
-    for attempt in range(2):
+    for attempt in range(3):
         try:
             result = client.invoke([
                 {"role": "system", "content": ANALYST_SYSTEM},
                 {"role": "user", "content": user_msg},
             ])
-            intelligence = result["parsed"]
+            parsed = result.get("parsed")
+            # json_mode parse failures surface as parsed=None *without* raising;
+            # treat that as a retryable error so a single malformed response
+            # doesn't sink the whole run.
+            if parsed is None:
+                raise ValueError(
+                    result.get("parsing_error") or "structured output returned no parsed result"
+                )
+            intelligence = parsed
             new_in, new_out = usage_from_raw(result.get("raw"))
             break
         except Exception as exc:

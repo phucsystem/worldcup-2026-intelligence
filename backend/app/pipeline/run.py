@@ -42,6 +42,26 @@ def _parse_date(val: str) -> date:
     return date.fromisoformat(val)
 
 
+def merge_intelligence(intelligence: dict | None, stake_groups: list[dict] | None) -> dict:
+    """Attach deterministic per-team scenario `rows` (from collector facts) onto
+    the LLM's `group_scenarios` by group_name. Groups the LLM emitted without a
+    matching deterministic group are dropped (no rows to ground them)."""
+    merged = dict(intelligence or {})
+    rows_by_group = {
+        g.get("group_name"): g.get("rows", [])
+        for g in (stake_groups or [])
+        if g.get("group_name")
+    }
+    out_scenarios = []
+    for sc in merged.get("group_scenarios") or []:
+        rows = rows_by_group.get(sc.get("group_name"))
+        if rows is None:
+            continue
+        out_scenarios.append({**sc, "rows": rows})
+    merged["group_scenarios"] = out_scenarios
+    return merged
+
+
 def run_pipeline(target_date: date) -> int:
     """Run the brief pipeline for *target_date*. Returns 0 on success, 1 on failure."""
     from app.data.repository import insert_agent_run, make_session_factory, upsert_article
@@ -110,7 +130,12 @@ def run_pipeline(target_date: date) -> int:
     with factory() as session:
         # Publish ONLY after editor succeeds — keeps last-good brief on failure.
         if not error:
-            upsert_article(session, final_state["article"], status="published", brief_date=target_date)
+            merged_intelligence = merge_intelligence(
+                final_state.get("intelligence"),
+                (final_state.get("computed_facts") or {}).get("stake_groups"),
+            )
+            article = {**final_state["article"], "intelligence": merged_intelligence}
+            upsert_article(session, article, status="published", brief_date=target_date)
             log.info("Article published for %s", target_date)
 
         insert_agent_run(session, {
@@ -144,11 +169,23 @@ def run_pipeline(target_date: date) -> int:
 run = run_pipeline
 
 
+def _today_in_brief_tz() -> date:
+    from zoneinfo import ZoneInfo
+    from app.config import settings
+    return datetime.now(tz=ZoneInfo(settings.BRIEF_TIMEZONE)).date()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run WC 2026 brief pipeline for a date")
-    parser.add_argument("--date", required=True, type=_parse_date, help="YYYY-MM-DD")
+    parser.add_argument(
+        "--date",
+        type=_parse_date,
+        default=None,
+        help="YYYY-MM-DD (defaults to today in BRIEF_TIMEZONE)",
+    )
     args = parser.parse_args()
-    sys.exit(run_pipeline(args.date))
+    target = args.date or _today_in_brief_tz()
+    sys.exit(run_pipeline(target))
 
 
 if __name__ == "__main__":

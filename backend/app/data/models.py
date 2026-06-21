@@ -11,11 +11,13 @@ class Match(BaseModel):
     home_score: Optional[int]
     away_score: Optional[int]
     status: Optional[str]
+    # Live match minute from API-Football (fixture.status.elapsed); None when not in play.
+    elapsed: Optional[int] = None
     kickoff_utc: Optional[datetime]
     events: Optional[list[dict]] = None
     # Raw competition round, e.g. "Group Stage - 1" or "Round of 16". Used to
     # distinguish group-stage matches (which count toward group tables) from
-    # knockout matches. Not persisted.
+    # knockout matches, and persisted so the knockout bracket can group by round.
     stage: Optional[str] = None
 
 
@@ -44,3 +46,20 @@ class MatchResult(BaseModel):
     won: bool
     drawn: bool
     lost: bool
+
+
+class Team(BaseModel):
+    """National team metadata extracted from the standings payload (no extra
+    API call). `logo_url` is the national crest, usable as a flag."""
+    team_id: int
+    name: str
+    logo_url: Optional[str] = None
+    group_name: Optional[str] = None
+
+
+class TopScorer(BaseModel):
+    player_id: int
+    name: str
+    photo_url: Optional[str] = None
+    team: Optional[str] = None
+    goals: int = 0

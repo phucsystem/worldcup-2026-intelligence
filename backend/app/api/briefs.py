@@ -32,6 +32,7 @@ class BriefDetail(BaseModel):
     body_md: str | None
     model_used: str | None
     created_at: str | None
+    intelligence: dict | None = None
 
 
 @router.get("", response_model=list[BriefSummary])
@@ -94,4 +95,5 @@ def _to_detail(row) -> BriefDetail:
         body_md=row.body_md,
         model_used=row.model_used,
         created_at=created,
+        intelligence=row.intelligence,
     )

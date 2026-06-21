@@ -15,8 +15,13 @@ Open any `s0X-*.html` directly in a browser. All assets are local (no CDN).
 | S-04 Archive | `s04-archive.html` | `/archive` | Return | `cjx-retention` |
 | S-05 Fixtures (Upcoming + Knockout) | `s05-upcoming-knockout.html` | `/fixtures` | Verify / Anticipate | `cjx-usage` |
 | S-06 Changelog | `s06-changelog.html` | `/changelog` | Trust / Share | `cjx-retention` |
+| S-07 Match Analysis (completed) | `s07-match-analysis.html` | `/match/[id]` | Read / Verify | `cjx-usage` |
+| S-08 Match Preview (upcoming) | `s08-match-preview.html` | `/fixture/[id]` | Anticipate / Verify | `cjx-usage` |
+| S-09 System Logs (info/error events) | `s09-logs.html` | `/logs` | Verify / Trust | `cjx-usage` |
 
-App Shell (top nav `Today` / `Standings` / `Fixtures` / `Archive` / `Changelog` + footer) is shared across all screens.
+App Shell (top nav `Today` / `Standings` / `Fixtures` / `Archive` / `Changelog` + footer) is shared across all screens. S-07/S-08 are match-scoped detail pages (no top-nav entry): S-07 is reached from the brief (S-02), S-08 from the home "Up next" card (S-01) and fixture rows (S-05).
+
+**Match analysis pages (S-07 / S-08):** single-match deep dives, distinct from the editorial brief (S-02). S-07 (completed) shows final score, key moments, stat bars, recent form, and standings impact. S-08 (upcoming) shows countdown, form, head-to-head, qualification stakes, players to watch, and "what to watch". S-08 also includes a **forecast block that is deliberately quarantined and badged "experimental"** — the prediction engine is roadmap-only and the product does not present LLM-invented predictions as fact; the figures are illustrative placeholders. Some fields (xG, head-to-head) are illustrative and may not be available from the free-tier data source in production.
 
 ## FR / Requirement Mapping
 

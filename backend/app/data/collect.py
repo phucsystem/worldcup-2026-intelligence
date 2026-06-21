@@ -14,9 +14,19 @@ import sys
 from collections import defaultdict
 from datetime import date
 
+from sqlalchemy import select
+
 from app.config import settings
 from app.data.api_football import APIFootballClient
-from app.data.repository import make_session_factory, upsert_matches, upsert_standings_snapshot
+from app.data.repository import (
+    make_session_factory,
+    matches_table,
+    prune_matches_not_in,
+    upsert_matches,
+    upsert_standings_snapshot,
+    upsert_teams,
+    upsert_top_scorers,
+)
 from app.data.standings_math import compute_group_table, apply_position_deltas, qualification_status
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
@@ -36,11 +46,13 @@ def run(target_date: date) -> int:
     session_factory = make_session_factory()
 
     try:
-        # Group membership comes from the standings endpoint (structural);
-        # the table numbers below are still computed in Python from results.
-        log.info("Fetching team->group map + fixtures (league=%s season=%s)",
+        # Team metadata (incl. crest logos + group) comes from the standings
+        # endpoint (structural); the table numbers below are still computed in
+        # Python from results.
+        log.info("Fetching teams + fixtures (league=%s season=%s)",
                  client._league_id, client._season)
-        team_group = client.team_group_map()
+        teams = client.get_teams()
+        team_group = {t.name: t.group_name for t in teams if t.group_name}
         # Fetch the full tournament-to-date fixture set (not just one day) so the
         # computed standings snapshot is cumulative and correct, not single-day.
         matches = client.get_fixtures()
@@ -77,7 +89,10 @@ def run(target_date: date) -> int:
     with session_factory() as session:
         try:
             upsert_matches(session, matches)
-            log.info("Upserted %d matches", len(matches))
+            # Drop any match not in the current fetch (e.g. a prior season's
+            # rows) so the DB always reflects only the active tournament.
+            removed = prune_matches_not_in(session, [m.fixture_id for m in matches])
+            log.info("Upserted %d matches (pruned %d stale)", len(matches), removed)
         except Exception as exc:
             log.error("Failed to upsert matches: %s", exc)
             return 1
@@ -90,8 +105,45 @@ def run(target_date: date) -> int:
             log.error("Failed to upsert standings: %s", exc)
             return 1
 
+        try:
+            upsert_teams(session, teams)
+            log.info("Upserted %d teams (logos)", len(teams))
+        except Exception as exc:
+            log.error("Failed to upsert teams: %s", exc)
+            return 1
+
+        # Top scorers are a nice-to-have enrichment (1 extra API call). A failure
+        # here (e.g. plan/season without topscorers access) must not abort the
+        # whole collect — log and continue.
+        try:
+            scorers = client.get_top_scorers()
+            upsert_top_scorers(session, client._season, scorers)
+            log.info("Upserted %d top scorers (season %s)", len(scorers), client._season)
+        except Exception as exc:
+            log.warning("Top scorers enrichment skipped: %s", exc)
+
     log.info("Collection complete for %s", target_date)
     return 0
+
+
+def collect_live(session_factory, client: APIFootballClient) -> int:
+    """Lightweight refresh of in-play matches: fetch ?live=all and upsert only
+    score/status/elapsed for fixtures we already track. No standings recompute,
+    no LLM, no prune. Returns the number of live matches upserted.
+
+    `?live=all` is league-agnostic, so results are intersected with stored
+    fixture_ids to avoid persisting other competitions' live games.
+    """
+    live = client.get_fixtures(live=True)
+    if not live:
+        return 0
+    with session_factory() as session:
+        known = {fid for (fid,) in session.execute(select(matches_table.c.fixture_id)).all()}
+        ours = [m for m in live if m.fixture_id in known]
+        if ours:
+            upsert_matches(session, ours)
+    log.info("Live refresh: %d in-play (%d ours) upserted", len(live), len(ours))
+    return len(ours)
 
 
 def main() -> None:
