@@ -77,7 +77,11 @@ function CompactFixtureStrip({ fixtures }: { fixtures: Fixture[] }) {
     <div className="next-two" aria-label="Next two fixtures">
       <span className="next-two-label">Next 2</span>
       {fixtures.map((fixture) => (
-        <Link key={fixture.fixture_id} className="next-two-match" href="/fixtures">
+        <Link
+          key={fixture.fixture_id}
+          className="next-two-match"
+          href={`/match/${fixture.fixture_id}`}
+        >
           <span className="next-two-time">
             <LocalTime iso={fixture.kickoff_utc} mode="time" withZone />{" "}
             <LocalTime iso={fixture.kickoff_utc} mode="day" />
