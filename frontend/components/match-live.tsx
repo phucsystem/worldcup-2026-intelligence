@@ -70,6 +70,14 @@ export default function MatchLive({ initial, forecastSlot, formSlot, stakesSlot 
   const code = (fixture.status ?? "").toUpperCase();
   const clock = frozen ? (SHORT_FROZEN[code] ?? label) : minute != null ? `${minute}'` : "LIVE";
 
+  // SBS On Demand has no public fixture→video-ID mapping, so deep-link to its
+  // search (path-segment form) pre-filled with the two team names; falls back to
+  // the football hub when a team is unknown.
+  const sbsUrl =
+    fixture.home_team && fixture.away_team
+      ? `https://www.sbs.com.au/ondemand/search/${encodeURIComponent(`${fixture.home_team} ${fixture.away_team}`)}`
+      : "https://www.sbs.com.au/sport/football";
+
   return (
     <>
       <section
@@ -106,10 +114,10 @@ export default function MatchLive({ initial, forecastSlot, formSlot, stakesSlot 
         <div className="nm-watch-wrap">
           <a
             className="nm-watch"
-            href="https://www.sbs.com.au/sport/football"
+            href={sbsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label="Watch this match live on the SBS website (opens in a new tab)"
+            aria-label={`Find ${fixture.home_team ?? "this match"} v ${fixture.away_team ?? ""} on SBS On Demand (opens in a new tab)`}
           >
             <span className="nw-dot" aria-hidden="true" /> Watch live on SBS
           </a>
