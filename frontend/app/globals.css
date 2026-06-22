@@ -1262,9 +1262,14 @@ a.next-match.is-live:hover {
   .section-title { margin-top: var(--space-8); }
   .nav-inner { padding: 0 var(--space-3); gap: var(--space-2); }
   .nav-actions { gap: var(--space-2); }
-  .nav-link { padding: 8px 10px; }
-  .coffee-button { height: 38px; padding: 0 12px; }
-  .coffee-button .coffee-text { font-size: 22px; }
+  /* Logo scales down (viewBox keeps the aspect ratio) to free row width. */
+  .brand svg { height: 30px; width: auto; }
+  .nav-link { padding: 8px 10px; font-size: 14px; }
+  /* Coffee button collapses to icon-only on mobile — the aria-label keeps it
+     accessible — so the full "Buy me a coffee" label can't crowd out the nav. */
+  .coffee-button { height: 38px; width: 38px; padding: 0; gap: 0; justify-content: center; }
+  .coffee-button .coffee-text { display: none; }
+  .coffee-button .coffee-emoji { font-size: 20px; }
   .changelog { padding-left: var(--space-6); }
   .changelog-entry::before { left: calc(-1 * var(--space-6) + 2px); }
   .cl-card { padding: var(--space-4); }
@@ -1756,11 +1761,11 @@ tr.log-detail-row > td {
 .fc-key.home { background: var(--accent-bright); }
 .fc-key.draw { background: var(--status-draw); }
 .fc-key.away { background: var(--text-muted); }
-.fc-note { margin: var(--space-4) 0 0; font-size: 12px; line-height: 1.5; color: var(--text-muted); }
-.fc-subhead { margin: var(--space-6) 0 var(--space-1); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-primary); }
-.fc-intro { margin: 0 0 var(--space-4); font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
+.fc-subhead { margin: var(--space-6) 0 var(--space-4); font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-primary); }
 .fc-factors { list-style: none; margin: 0; padding: var(--space-4) 0 0; border-top: 1px dashed rgba(244, 183, 64, 0.3); display: flex; flex-direction: column; gap: var(--space-4); }
-.fc-factor { display: grid; grid-template-columns: 140px 92px 1fr; gap: var(--space-3); align-items: center; }
+/* `auto` (not a fixed width) on the lean column so a long badge ("Favours New
+   Zealand") sizes to its content instead of overflowing onto the why text. */
+.fc-factor { display: grid; grid-template-columns: 140px auto 1fr; gap: var(--space-3); align-items: center; }
 .ff-name { font-size: 13px; font-weight: 700; color: var(--text-primary); }
 .ff-lean { justify-self: start; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: var(--radius-pill); white-space: nowrap; }
 .ff-lean.home { color: var(--accent-bright); background: rgba(77, 139, 255, 0.16); }
