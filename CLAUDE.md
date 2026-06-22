@@ -188,4 +188,13 @@ YAGNI | KISS | DRY
 - Workflow: `.claude/workflows/multi-model-task-distribution.md`
 - Skills: `.claude/skills/`
 
+---
+
+## PULL REQUESTS
+
+When opening a PR to `main`:
+
+- **Update `frontend/public/CHANGELOG.md`** — CI's "Require changelog update" job fails any PR that doesn't touch it (newest version first, user-facing wording).
+- **Confirm the pipeline is all green before reporting the PR done** — run `gh pr checks <num> --watch`. If any check fails, fix the cause and push until every check passes (or is an intentional, non-required skip). A red pipeline means the PR is not done.
+
 <!-- IPA-TEMPLATE-END -->

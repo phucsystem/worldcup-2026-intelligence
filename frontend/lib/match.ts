@@ -35,7 +35,10 @@ export interface TimelineRow {
 }
 
 function isGoal(e: MatchEvent): boolean {
-  return (e.type ?? "").toLowerCase() === "goal";
+  if ((e.type ?? "").toLowerCase() !== "goal") return false;
+  // API-Football logs a missed/saved penalty as a "Goal"-type event with
+  // detail "Missed Penalty" — it never changes the score, so it is not a goal.
+  return (e.detail ?? "").toLowerCase() !== "missed penalty";
 }
 
 function isOwnGoal(e: MatchEvent): boolean {
