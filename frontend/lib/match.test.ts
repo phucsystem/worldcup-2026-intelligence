@@ -78,6 +78,16 @@ describe("buildTimeline", () => {
     expect(rows[0].score).toEqual({ home: 1, away: 0 });
   });
 
+  it("does not count a missed penalty (a Goal-type event) in the running score", () => {
+    const events = [
+      ev({ minute: 9, side: "home", detail: "Missed Penalty", player: "Messi" }),
+      ev({ minute: 38, side: "home", player: "Messi" }),
+    ];
+    const rows = buildTimeline(events);
+    expect(rows[0].score).toBeNull();
+    expect(rows[1].score).toEqual({ home: 1, away: 0 });
+  });
+
   it("carries the assister on goal rows", () => {
     const rows = buildTimeline([
       ev({ minute: 51, side: "home", player: "Vinícius", assist: "Rodrygo" }),
@@ -113,6 +123,26 @@ describe("goalscorers", () => {
         goals: [
           { minute: 51, detail: "Normal Goal", assist: null },
           { minute: 78, detail: "Normal Goal", assist: null },
+        ],
+      },
+    ]);
+  });
+
+  it("excludes a missed penalty so a hat-trick is not over-counted", () => {
+    const events = [
+      ev({ minute: 9, side: "home", detail: "Missed Penalty", player: "Messi" }),
+      ev({ minute: 38, side: "home", player: "Messi" }),
+      ev({ minute: 90, extra: 5, side: "home", player: "Messi" }),
+    ];
+    const out = goalscorers(events);
+    expect(out).toEqual([
+      {
+        side: "home",
+        player: "Messi",
+        minutes: [38, 90],
+        goals: [
+          { minute: 38, detail: "Normal Goal", assist: null },
+          { minute: 90, detail: "Normal Goal", assist: null },
         ],
       },
     ]);
