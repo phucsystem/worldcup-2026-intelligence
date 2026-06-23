@@ -6,6 +6,7 @@ What's shipping on the World Cup 2026 Intelligence platform. Newest first.
 
 - **Added** — Each date in "Latest Results" now shows how well the model's pre-match forecasts did that day (e.g. 3/4 · 75%), colored by accuracy.
 - **Added** — Hover or tap a date's forecast rate to see the per-match breakdown — which results the model called and which it missed.
+- **Improved** — Daily brief pages now open with a cinematic stadium hero and a cleaner reading layout.
 
 ## v0.11.0 — 23 Jun 2026
 
