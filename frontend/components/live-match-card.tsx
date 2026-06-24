@@ -7,6 +7,7 @@ import TeamFlag from "@/components/team-flag";
 import FlagBackdrop from "@/components/flag-backdrop";
 import ShareResultButton from "@/components/share-result-button";
 import { liveMinute } from "@/lib/live";
+import { sbsSearchUrl } from "@/lib/match";
 
 interface Props {
   initial: FixtureRow;
@@ -102,6 +103,15 @@ export default function LiveMatchCard({ initial }: Props) {
       <span className="nm-cta">Match analysis →</span>
       </Link>
       <div className="nm-actions">
+        <a
+          className="nm-watch"
+          href={sbsSearchUrl(fixture.home_team, fixture.away_team)}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Find ${fixture.home_team ?? "this match"} v ${fixture.away_team ?? ""} on SBS On Demand (opens in a new tab)`}
+        >
+          <span className="nw-dot" aria-hidden="true" /> Watch live on SBS
+        </a>
         <ShareResultButton
           fixtureId={fixture.fixture_id}
           label="Share live score"
