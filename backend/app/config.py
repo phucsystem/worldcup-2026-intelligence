@@ -15,6 +15,19 @@ class Settings(BaseSettings):
     DEEPSEEK_API_KEY: Optional[str] = None
     BRIEF_TIMEZONE: str = "Australia/Melbourne"
 
+    # Social discussion highlights. The whole feature is gated on credentials:
+    # absent Reddit/Bluesky creds → the backfill no-ops and the panel stays dark.
+    REDDIT_CLIENT_ID: Optional[str] = None
+    REDDIT_CLIENT_SECRET: Optional[str] = None
+    REDDIT_USER_AGENT: str = "wc2026-social/0.1"
+    BLUESKY_IDENTIFIER: Optional[str] = None
+    BLUESKY_APP_PASSWORD: Optional[str] = None
+    SOCIAL_HIGHLIGHTS_MAX: int = 3        # curated highlights stored per fixture
+    SOCIAL_LOOKBACK_HOURS: int = 48       # only consider posts newer than this
+    SOCIAL_LOOKAHEAD_HOURS: int = 48      # only fixtures kicking off within this window
+    SOCIAL_MAX_FIXTURES_PER_RUN: int = 12  # hard cap on per-run DeepSeek fan-out
+    SOCIAL_CANDIDATE_CAP: int = 30        # pre-trim cap handed to the LLM
+
     # Live poller: how often to hit ?live=all while a match is in its window,
     # how long to sleep when no match is live, and the post-kickoff window
     # during which a fixture is considered possibly-in-play.

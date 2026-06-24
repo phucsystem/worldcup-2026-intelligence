@@ -2110,6 +2110,49 @@ tr.log-detail-row > td {
 .ff-lean.even { color: var(--status-draw); background: rgba(244, 183, 64, 0.16); }
 .ff-why { font-size: 13px; line-height: 1.5; color: var(--text-secondary); }
 
+/* ---- Social highlights ("What fans are saying") ---- */
+.social-highlights {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: var(--space-6);
+}
+.sh-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-4); }
+.sh-title { margin: 0; font-size: 18px; font-weight: 800; color: var(--text-primary); }
+.sh-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(107, 122, 158, 0.16);
+  border: 1px solid rgba(107, 122, 158, 0.4);
+  color: var(--text-secondary);
+  font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;
+}
+.sh-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-4); }
+.sh-item {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-input);
+  padding: var(--space-4);
+  display: flex; flex-direction: column; gap: var(--space-2);
+}
+.sh-text { margin: 0; font-size: 14px; line-height: 1.55; color: var(--text-primary); overflow-wrap: anywhere; }
+.sh-why {
+  align-self: flex-start;
+  font-size: 11px; font-weight: 700; padding: 2px 9px;
+  border-radius: var(--radius-pill);
+  color: var(--text-secondary); background: rgba(107, 122, 158, 0.18);
+}
+.sh-link { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; text-decoration: none; }
+.sh-link:hover .sh-viewsrc { text-decoration: underline; }
+.sh-meta { display: inline-flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; font-size: 12px; color: var(--text-muted); }
+.sh-source { font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; font-size: 11px; }
+.sh-source.reddit { color: #ff4500; }
+.sh-source.bluesky { color: var(--accent-bright); }
+.sh-author { color: var(--text-secondary); overflow-wrap: anywhere; }
+.sh-date { color: var(--text-muted); }
+.sh-viewsrc { font-size: 12px; font-weight: 700; color: var(--accent-bright); white-space: nowrap; }
+
 /* ---- Forecast vs result (completed match: how the forecast held up) ---- */
 .fc-outcome {
   background: var(--surface);

@@ -4,6 +4,7 @@ What's shipping on the World Cup 2026 Intelligence platform. Newest first, group
 
 ## 24 Jun 2026
 
+- **Added** — A "What fans are saying" panel on upcoming match pages: highlights of public fan discussion from Reddit and Bluesky, auto-curated for insight and shown alongside the forecast (with a link back to each source). The forecast itself is unchanged — fan opinion never feeds the model.
 - **Improved** — The match hero banner now looks and behaves consistently across preview, live, and finished pages: the leading team is highlighted during a live match and after full time, with win/loss tags shown only once the result is final.
 - **Added** — Upcoming match heroes (home and match pages) now show a glanceable win-probability bar, and sharing an upcoming match copies a forecast image — matchup, probability split, and kickoff — instead of a blank 0–0 scoreline.
 - **Improved** — The home "Latest Results" section now shows every match from the last three result days instead of just the most recent eight, so a busy match day is never cut off.

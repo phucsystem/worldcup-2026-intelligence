@@ -155,12 +155,24 @@ export interface TeamStatus {
   at_risk: PlayerStatus[];
 }
 
+// Mirrors backend app.api.fixtures.SocialHighlight — one curated fan comment.
+export interface SocialHighlight {
+  source: string; // "reddit" | "bluesky"
+  url: string;
+  author: string;
+  posted_at: string | null;
+  text: string;
+  why: string | null;
+}
+
 export interface FixtureDetail extends FixtureRow {
   events: MatchEvent[];
   statistics: MatchStat[];
   verdict: string | null;
   verdict_model: string | null;
   forecast: Forecast | null;
+  social_highlights: SocialHighlight[];
+  social_model: string | null;
   home_status: TeamStatus | null;
   away_status: TeamStatus | null;
 }

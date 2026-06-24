@@ -7,7 +7,7 @@ from typing import Optional
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from sqlalchemy import select
 
 from app.config import settings
@@ -113,12 +113,28 @@ class MatchForecast(BaseModel):
     model: Optional[str] = None
 
 
+class SocialHighlight(BaseModel):
+    # One curated fan comment. All fields originate from the fetched source post
+    # (app.social); the model only selects which candidates surface + the `why`
+    # tag. `url` is always an http(s) link back to the source for attribution.
+    source: str          # "reddit" | "bluesky"
+    url: str
+    author: str
+    posted_at: Optional[str] = None
+    text: str
+    why: Optional[str] = None
+
+
 class FixtureDetail(FixtureRow):
     events: list[MatchEvent] = []
     statistics: list[MatchStat] = []
     verdict: Optional[str] = None
     verdict_model: Optional[str] = None
     forecast: Optional[MatchForecast] = None
+    # Curated fan-discussion highlights for an upcoming fixture; empty list when
+    # none stored. `social_model` names the producing model.
+    social_highlights: list[SocialHighlight] = []
+    social_model: Optional[str] = None
     # Per-team objective + availability, populated only for non-finished
     # fixtures (preview/live); None on finished fixtures and when a side has
     # nothing to show.
@@ -313,6 +329,27 @@ def select_fixtures_needing_forecast(matches, existing: set[int]) -> list[int]:
         for m in matches
         if m.fixture_id not in existing and m.group_name
     ]
+
+
+def select_fixtures_needing_social(matches, now: datetime) -> list[int]:
+    """Fixture ids for upcoming group-stage matches whose social highlights should
+    be (re)collected. Unlike the once-only forecast selector this is REFRESH-AWARE:
+    it deliberately does NOT exclude fixtures that already have highlights, so buzz
+    re-curates daily as kickoff approaches. Bounded to keep the daily fan-out sane:
+    only non-finished group-stage fixtures kicking off within
+    SOCIAL_LOOKAHEAD_HOURS, sorted by nearest kickoff, capped at
+    SOCIAL_MAX_FIXTURES_PER_RUN. Pure: `now` is passed in, not read from the clock."""
+    horizon = now + timedelta(hours=settings.SOCIAL_LOOKAHEAD_HOURS)
+    upcoming = [
+        m
+        for m in matches
+        if m.group_name
+        and (m.status or "").strip().upper() not in FINISHED_STATUSES
+        and m.kickoff_utc is not None
+        and now <= m.kickoff_utc <= horizon
+    ]
+    upcoming.sort(key=lambda m: m.kickoff_utc)
+    return [m.fixture_id for m in upcoming[: settings.SOCIAL_MAX_FIXTURES_PER_RUN]]
 
 
 def _enrich(row: dict, logos: dict[str, str]) -> FixtureRow:
@@ -554,6 +591,8 @@ def get_fixture(fixture_id: int):
         verdict_model = row.verdict_model
         forecast_json = row.forecast_json
         forecast_model = row.forecast_model
+        social_json = row.social_json
+        social_model = row.social_model
         home_team, away_team = row.home_team, row.away_team
         # Objective + availability are a pre-match aid: compute them for
         # preview/live fixtures only, never for a finished result.
@@ -567,6 +606,16 @@ def get_fixture(fixture_id: int):
     events = normalize_events(events_json, home_team, away_team)
     statistics = normalize_statistics(statistics_json, home_team, away_team)
     forecast = MatchForecast(**forecast_json, model=forecast_model) if forecast_json else None
+    # Blobs are LLM-produced from the social backfill; tolerate a malformed item
+    # by dropping it rather than 500-ing the whole fixture (degrade the panel, not
+    # the page). `social_json` may be absent or not the expected dict shape.
+    raw_highlights = (social_json or {}).get("highlights") if isinstance(social_json, dict) else None
+    social_highlights = []
+    for h in raw_highlights or []:
+        try:
+            social_highlights.append(SocialHighlight(**h))
+        except (TypeError, ValidationError):
+            continue
     return FixtureDetail(
         **base.model_dump(),
         events=events,
@@ -574,6 +623,8 @@ def get_fixture(fixture_id: int):
         verdict=verdict_text,
         verdict_model=verdict_model,
         forecast=forecast,
+        social_highlights=social_highlights,
+        social_model=social_model if social_highlights else None,
         home_status=home_status,
         away_status=away_status,
     )

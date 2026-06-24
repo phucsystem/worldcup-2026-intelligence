@@ -26,6 +26,11 @@ class Match(BaseModel):
     # model that produced it. Populated by the forecast backfill; None until then.
     forecast_json: Optional[dict] = None
     forecast_model: Optional[str] = None
+    # DeepSeek-curated fan-discussion highlights ({"highlights": [...]}) + the
+    # model that produced them. Refreshed daily for upcoming group-stage matches
+    # by the social backfill; None until then.
+    social_json: Optional[dict] = None
+    social_model: Optional[str] = None
     # Raw competition round, e.g. "Group Stage - 1" or "Round of 16". Used to
     # distinguish group-stage matches (which count toward group tables) from
     # knockout matches, and persisted so the knockout bracket can group by round.
