@@ -3,6 +3,8 @@ import TeamFlag from "@/components/team-flag";
 import LocalTime from "@/components/local-time";
 import MatchScorersStrip from "@/components/match-scorers-strip";
 import FlagBackdrop from "@/components/flag-backdrop";
+import ShareResultButton from "@/components/share-result-button";
+import { sbsSearchUrl } from "@/lib/match";
 
 interface Props {
   fixture: FixtureDetail;
@@ -58,6 +60,18 @@ export default function MatchHeroFinal({ fixture }: Props) {
       <div className="nm-meta">
         <LocalTime iso={fixture.kickoff_utc} mode="dayTime" withZone />
       </div>
+      <div className="nm-watch-wrap">
+        <a
+          className="nm-watch"
+          href={sbsSearchUrl(fixture.home_team, fixture.away_team)}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Find ${fixture.home_team ?? "this match"} v ${fixture.away_team ?? ""} highlights on SBS On Demand (opens in a new tab)`}
+        >
+          <span aria-hidden="true">▶</span> Watch highlights on SBS
+        </a>
+      </div>
+      <ShareResultButton fixtureId={fixture.fixture_id} shareTitle={`${fixture.home_team ?? "TBD"} ${hs}–${as} ${fixture.away_team ?? "TBD"}`} />
     </section>
   );
 }

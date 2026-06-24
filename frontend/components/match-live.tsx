@@ -8,8 +8,9 @@ import Goalscorers from "@/components/goalscorers";
 import MatchScorersStrip from "@/components/match-scorers-strip";
 import MatchStats from "@/components/match-stats";
 import FlagBackdrop from "@/components/flag-backdrop";
+import ShareResultButton from "@/components/share-result-button";
 import { liveMinute } from "@/lib/live";
-import { eventKey, freshEventKeys } from "@/lib/match";
+import { eventKey, freshEventKeys, sbsSearchUrl } from "@/lib/match";
 
 interface Props {
   initial: FixtureDetail;
@@ -71,13 +72,7 @@ export default function MatchLive({ initial, forecastSlot, formSlot, stakesSlot,
   const code = (fixture.status ?? "").toUpperCase();
   const clock = frozen ? (SHORT_FROZEN[code] ?? label) : minute != null ? `${minute}'` : "LIVE";
 
-  // SBS On Demand has no public fixture→video-ID mapping, so deep-link to its
-  // search (path-segment form) pre-filled with the two team names; falls back to
-  // the football hub when a team is unknown.
-  const sbsUrl =
-    fixture.home_team && fixture.away_team
-      ? `https://www.sbs.com.au/ondemand/search/${encodeURIComponent(`${fixture.home_team} ${fixture.away_team}`)}`
-      : "https://www.sbs.com.au/sport/football";
+  const sbsUrl = sbsSearchUrl(fixture.home_team, fixture.away_team);
 
   return (
     <>
@@ -123,6 +118,11 @@ export default function MatchLive({ initial, forecastSlot, formSlot, stakesSlot,
             <span className="nw-dot" aria-hidden="true" /> Watch live on SBS
           </a>
         </div>
+        <ShareResultButton
+          fixtureId={fixture.fixture_id}
+          label="Share live score"
+          shareTitle={`${fixture.home_team ?? "TBD"} ${fixture.home_score ?? 0}–${fixture.away_score ?? 0} ${fixture.away_team ?? "TBD"}`}
+        />
       </section>
 
       {forecastSlot}

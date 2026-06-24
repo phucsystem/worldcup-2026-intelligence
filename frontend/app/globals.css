@@ -1825,6 +1825,24 @@ tr.log-detail-row > td {
 .nm-watch:hover { color: #06231A; transform: translateY(-1px); box-shadow: 0 6px 18px rgba(3, 8, 20, 0.45); }
 .nm-watch .nw-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--status-loss); }
 
+/* ---- Share result / live score ---- */
+.share-result {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  margin-top: var(--space-3);
+}
+.share-result-btn {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: 8px 18px;
+  border-radius: var(--radius-pill);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff; font-weight: 700; font-size: 13px; cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.12s ease;
+}
+.share-result-btn:hover { background: rgba(255, 255, 255, 0.16); border-color: var(--accent-bright); transform: translateY(-1px); }
+.share-result-btn:disabled { opacity: 0.6; cursor: default; transform: none; }
+.share-result-status { min-height: 16px; font-size: 12px; color: var(--status-live); }
+
 /* ---- Match timeline / key moments ---- */
 .mt-list { list-style: none; margin: 0; padding: 0; position: relative; }
 .mt-list::before {
