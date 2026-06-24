@@ -4,6 +4,7 @@ import type { FixtureDetail } from "@/lib/api";
 import { flagSvg } from "@/lib/flags";
 import { goalscorers } from "@/lib/match";
 import { matchState } from "@/lib/match";
+import { SITE } from "@/lib/site";
 
 // Shared render for the share/OG image. Satori (next/og) only supports flexbox
 // and a CSS subset — every multi-child node carries display:flex, and the live
@@ -124,11 +125,11 @@ function brandLockup(size: "sm" | "lg") {
       <img src={BALL_URI} alt="" width={ball} height={ball} style={{ width: ball, height: ball }} />
       <div style={{ display: "flex", flexDirection: "column" }}>
         <div style={{ display: "flex", fontSize: word, fontWeight: 800, letterSpacing: -1, lineHeight: 1 }}>
-          <span style={{ color: "#fff" }}>WC</span>
-          <span style={{ color: ACCENT }}>26</span>
+          <span style={{ color: "#fff" }}>{SITE.wordmark.primary}</span>
+          <span style={{ color: ACCENT }}>{SITE.wordmark.accent}</span>
         </div>
         <div style={{ display: "flex", fontSize: sub, fontWeight: 600, letterSpacing: 4, color: MUTED, marginTop: 4 }}>
-          INTELLIGENCE
+          {SITE.wordmark.sub}
         </div>
       </div>
     </div>
@@ -331,7 +332,7 @@ export function renderShareBanner(fixture: FixtureDetail) {
       >
         {brandLockup("sm")}
         <div style={{ display: "flex", fontSize: 24, fontWeight: 600, color: MUTED }}>
-          wc2026.phucsystemlabs.com
+          {SITE.domain}
         </div>
       </div>
     </div>
@@ -355,7 +356,7 @@ export function renderFallbackBanner() {
     >
       {brandLockup("lg")}
       <div style={{ display: "flex", fontSize: 30, color: MUTED, marginTop: 24 }}>
-        wc2026.phucsystemlabs.com
+        {SITE.domain}
       </div>
     </div>
   );
