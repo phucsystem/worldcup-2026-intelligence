@@ -2,6 +2,10 @@
 
 What's shipping on the World Cup 2026 Intelligence platform. Newest first, grouped by release date.
 
+## 26 Jun 2026
+
+- **Fixed** — Live match pages now reliably show the live win-probability and the AI "Live read." A routine score refresh during a match was wiping each in-play game's group, which silently switched those live insights off mid-match; the group is now preserved so they keep updating to full time.
+
 ## 25 Jun 2026
 
 - **Improved** — Sharing any page now produces a proper link preview (title, description, and image) on social and chat, and the site is far easier for search engines to find: every section and match page has a unique, descriptive title, plus a sitemap and robots file so pages get discovered and indexed.
