@@ -46,6 +46,9 @@ class Match(BaseModel):
     live_read_text: Optional[str] = None
     live_read_model: Optional[str] = None
     live_read_sig: Optional[str] = None
+    # API-Football /injuries records for THIS fixture ({"players": [...]}), refreshed
+    # each collect for upcoming fixtures; None until then / on plans without coverage.
+    injuries_json: Optional[dict] = None
 
 
 class StandingRow(BaseModel):
@@ -93,19 +96,24 @@ class TopScorer(BaseModel):
 
 
 class PlayerStatus(BaseModel):
-    """A player flagged for the next match: suspended (serving a ban) or at_risk
-    (one booking away). `reason` distinguishes the cause; `key_player` marks a
-    tournament top scorer or last-match scorer/assister for emphasis."""
+    """A player flagged for the next match: suspended (serving a ban), at_risk
+    (one booking away), injured (ruled out), or doubtful (fitness in question).
+    `reason` distinguishes the cause; for injuries it carries the API reason text
+    (e.g. "Calf Injury"). `key_player` marks a tournament top scorer or last-match
+    scorer/assister for emphasis."""
     player: str
-    reason: str          # "red-card" | "yellow-accumulation" | "one-yellow"
-    status: str          # "suspended" | "at_risk"
+    # cards: "red-card" | "yellow-accumulation" | "one-yellow"; injuries: free text
+    reason: str
+    status: str          # "suspended" | "at_risk" | "injured" | "doubtful"
     key_player: bool = False
 
 
 class TeamStatus(BaseModel):
     """Per-team, fact-based status for an upcoming/live fixture: one objective
-    line (reusing the standings scenario vocabulary) plus availability lists."""
+    line (reusing the standings scenario vocabulary) plus availability lists.
+    `injured` covers both ruled-out (status "injured") and doubtful players."""
     objective: str
     objective_css: str           # "qualified" | "out" | "contention"
     unavailable: list[PlayerStatus] = []
     at_risk: list[PlayerStatus] = []
+    injured: list[PlayerStatus] = []

@@ -18,13 +18,13 @@ HTTP_TIMEOUT = httpx.Timeout(10.0, connect=5.0)
 
 
 class Candidate(BaseModel):
-    """One fetched post, normalized across sources, before LLM curation."""
-    source: str          # "reddit" | "bluesky"
+    """One fetched item, normalized across sources, before LLM curation."""
+    source: str          # "reddit" | "bluesky" | "x" | "news"
     url: str
-    author: str
+    author: str          # handle (social) or publication name (news)
     posted_at: Optional[str] = None   # UTC ISO-8601
     text: str
-    engagement: int = 0  # upvotes (reddit) / likes+reposts (bluesky)
+    engagement: int = 0  # upvotes/likes+reposts (social); 0 for news
 
 
 @runtime_checkable

@@ -357,6 +357,7 @@ body {
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
+  --space-5: 20px;
   --space-6: 24px;
   --space-8: 32px;
   --space-12: 48px;
@@ -365,6 +366,11 @@ body {
   --radius-pill: 999px;
   --radius-input: 8px;
   --radius-button: 8px;
+  /* Card standard — shared surface/border/radius/padding for content cards.
+     Use the `.card` base class (below) or these tokens so cards stay consistent. */
+  --card-padding: var(--space-6);        /* roomy default for content cards */
+  --card-padding-tight: var(--space-4);  /* dense cards (compact strips, list rows) */
+  --card-gap: var(--space-4);             /* gap between stacked sections inside a card */
   --nav-height: 60px;
   --col-reading: 960px;
   --col-standings: 1120px;
@@ -1170,6 +1176,7 @@ a.next-match.is-live:hover {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   gap: var(--space-2);
   margin-bottom: var(--space-6);
 }
@@ -1182,7 +1189,7 @@ a.next-match.is-live:hover {
   color: var(--text-muted);
 }
 .next-two-match {
-  flex: 1 1 280px;
+  flex: 0 1 auto;
   min-width: 0;
   display: flex;
   align-items: center;
@@ -1231,7 +1238,6 @@ a.next-match.is-live:hover {
 }
 .next-two-all {
   flex-shrink: 0;
-  margin-left: auto;
   font-size: 13px;
   font-weight: 700;
   color: var(--primary);
@@ -2109,16 +2115,27 @@ tr.log-detail-row > td {
 .fs-pip.l { background: var(--status-loss); color: #fff; }
 
 /* ---- Team status (objective + availability) — reuses .sk-note status pills ---- */
+/* Card standard: the shared content-card surface. Compose it (`className="card ..."`)
+   or mirror it via the --card-* tokens so every card has the same surface, border,
+   radius, and padding. Use `.card--tight` for dense cards (compact strips, rows). */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-card);
+  padding: var(--card-padding);
+}
+.card--tight { padding: var(--card-padding-tight); }
+
 .team-status { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
 .ts-side {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-card);
-  padding: var(--space-4) var(--space-5) var(--space-5);
+  padding: var(--card-padding);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-3);
+  gap: var(--card-gap);
   text-align: center;
 }
 .ts-team { display: flex; align-items: center; justify-content: center; gap: var(--space-2); font-weight: 800; }
@@ -2129,9 +2146,9 @@ tr.log-detail-row > td {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--text-muted);
-  margin-bottom: var(--space-2);
+  margin-bottom: var(--space-3);
 }
-.ts-players { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.ts-players { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
 .tps-player {
   display: flex;
   align-items: center;
@@ -2142,6 +2159,12 @@ tr.log-detail-row > td {
 }
 .tps-player.key { font-weight: 800; color: var(--text-primary); }
 .tps-star { color: var(--status-draw); font-size: 12px; }
+.tps-badge {
+  flex-shrink: 0;
+  font-size: 12px;
+  line-height: 1;
+  cursor: default;
+}
 
 /* ---- Forecast (experimental — quarantined, dashed, model-preview only) ---- */
 .forecast-card {
@@ -2225,6 +2248,8 @@ tr.log-detail-row > td {
 .sh-source { font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; font-size: 11px; }
 .sh-source.reddit { color: #ff4500; }
 .sh-source.bluesky { color: var(--accent-bright); }
+.sh-source.x { color: var(--text-primary); }
+.sh-source.news { color: var(--status-draw); }
 .sh-author { color: var(--text-secondary); overflow-wrap: anywhere; }
 .sh-date { color: var(--text-muted); }
 .sh-viewsrc { font-size: 12px; font-weight: 700; color: var(--accent-bright); white-space: nowrap; }

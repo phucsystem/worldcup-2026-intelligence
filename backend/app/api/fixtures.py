@@ -540,11 +540,15 @@ def _key_names_by_team(session) -> dict[str, set[str]]:
 
 
 def _team_statuses(
-    session, home_team: Optional[str], away_team: Optional[str]
+    session,
+    home_team: Optional[str],
+    away_team: Optional[str],
+    injury_records: list[dict],
 ) -> tuple[Optional[TeamStatus], Optional[TeamStatus]]:
     """Build (home_status, away_status) for a non-finished fixture. Each side
-    gets its objective (from live group tables) and availability (replayed from
-    its prior group matches), with key players emphasised."""
+    gets its objective (from live group tables), availability (suspensions replayed
+    from its prior group matches), and injured/doubtful players (from this fixture's
+    stored /injuries records), with key players emphasised."""
     group_tables = _all_group_tables(session)
     top_scorers = _key_names_by_team(session)
 
@@ -553,7 +557,9 @@ def _team_statuses(
             return None
         prior = finished_group_matches_for_team(session, team)
         key_names = top_scorers.get(team, set()) | last_match_contributors(prior, team)
-        return build_team_status(group_tables, team, prior, key_names=key_names)
+        return build_team_status(
+            group_tables, team, prior, key_names=key_names, injury_records=injury_records
+        )
 
     return side(home_team), side(away_team)
 
@@ -655,12 +661,15 @@ def get_fixture(fixture_id: int):
         live_winprob_history_json = row.live_winprob_history_json
         live_read_text = row.live_read_text
         live_read_model = row.live_read_model
+        injuries_json = row.injuries_json
         home_team, away_team = row.home_team, row.away_team
         # Objective + availability are a pre-match aid: compute them for
         # preview/live fixtures only, never for a finished result.
         is_finished = (row.status or "").strip().upper() in FINISHED_STATUSES
+        injury_records = (injuries_json or {}).get("players") if isinstance(injuries_json, dict) else None
         home_status, away_status = (
-            (None, None) if is_finished else _team_statuses(session, home_team, away_team)
+            (None, None) if is_finished
+            else _team_statuses(session, home_team, away_team, injury_records or [])
         )
     finally:
         session.close()

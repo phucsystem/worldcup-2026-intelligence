@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, timezone
 
 import app.data.collect as collect
 import app.social.bluesky as bluesky_mod
+import app.social.news as news_mod
 import app.social.reddit as reddit_mod
 import app.social.select as select_mod
 from app.config import settings
@@ -47,10 +48,13 @@ def _fake_factory():
     yield object()  # dummy session; upsert_matches is mocked so it's never used
 
 
-def _install(monkeypatch, *, reddit, bluesky, curate, key="k"):
+def _install(monkeypatch, *, reddit, bluesky, curate, key="k", news=None):
     monkeypatch.setattr(settings, "DEEPSEEK_API_KEY", key)
     monkeypatch.setattr(reddit_mod, "RedditSource", lambda: reddit)
     monkeypatch.setattr(bluesky_mod, "BlueskySource", lambda: bluesky)
+    # Default the news source to unavailable so these Reddit/Bluesky-focused tests
+    # are unaffected by the bundled feeds config; pass news=_FakeSource(...) to test it.
+    monkeypatch.setattr(news_mod, "NewsSource", lambda: news or _FakeSource("news", avail=False))
     monkeypatch.setattr(select_mod, "generate_social_highlights", curate)
     stored = []
     monkeypatch.setattr(collect, "upsert_matches", lambda session, ms: stored.extend(ms))
@@ -116,6 +120,23 @@ def test_one_source_raising_other_still_used(monkeypatch):
     n = collect.backfill_social_highlights(_fake_factory, [_match(1)])
     assert n == 1
     assert captured["n"] == 1  # bluesky candidate survived the reddit failure
+
+
+def test_news_only_drives_backfill(monkeypatch):
+    # News needs no credentials: with Reddit + Bluesky unavailable, an available
+    # news source alone still collects + curates highlights.
+    blob = {"highlights": [{"source": "news", "url": "https://n/1",
+                            "author": "BBC", "text": "report", "why": "news"}]}
+    stored = _install(
+        monkeypatch,
+        reddit=_FakeSource("reddit", avail=False),
+        bluesky=_FakeSource("bluesky", avail=False),
+        news=_FakeSource("news", cands=[Candidate(
+            source="news", url="https://n/1", author="BBC", text="report")]),
+        curate=lambda h, a, c: (blob, "deepseek-chat"),
+    )
+    assert collect.backfill_social_highlights(_fake_factory, [_match(1)]) == 1
+    assert stored[0].social_json == blob
 
 
 def test_empty_curation_keeps_last_good(monkeypatch):

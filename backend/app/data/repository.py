@@ -45,6 +45,7 @@ matches_table = sa.Table(
     sa.Column("live_read_text", sa.Text),
     sa.Column("live_read_model", sa.String),
     sa.Column("live_read_sig", sa.String),
+    sa.Column("injuries_json", sa.JSON),
     sa.Column("updated_at", sa.DateTime(timezone=True)),
 )
 
@@ -283,6 +284,12 @@ def upsert_matches(session: Session, matches: list[Match]) -> None:
             set_["live_read_model"] = m.live_read_model
             values["live_read_sig"] = m.live_read_sig
             set_["live_read_sig"] = m.live_read_sig
+        # Injuries are refreshed each collect for upcoming fixtures, so overwrite
+        # whenever the payload carries them (incl. an empty list, to clear a
+        # recovered player). Left untouched when None (e.g. finished fixtures).
+        if m.injuries_json is not None:
+            values["injuries_json"] = m.injuries_json
+            set_["injuries_json"] = m.injuries_json
         stmt = (
             pg_insert(matches_table)
             .values(**values)

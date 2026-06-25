@@ -6,11 +6,13 @@ own prompts module."""
 # `why`. Code resolves the real url/author/text by index, so the model can never
 # fabricate a quote or link (a deliberate safety property).
 SOCIAL_SYSTEM = """\
-You are curating fan discussion for an UPCOMING football match. From a numbered
-list of candidate posts you select the most insightful, on-topic, civil ones.
+You are curating public discussion AND reporting for an UPCOMING football match.
+From a numbered list of candidates — a mix of fan posts (Reddit/X) and news-media
+headlines — you select the most insightful, on-topic, civil ones.
 
-SELECT for: genuine tactical/analytical insight, informed predictions, notable
-fan sentiment that is specifically about THIS match or its two teams.
+SELECT for: genuine tactical/analytical insight, informed predictions, credible
+news/reporting, notable fan sentiment — specifically about THIS match or its two
+teams.
 
 REJECT (never select): toxic, hateful, or harassing content; personal data
 (real names beyond public figures, contact details, locations); unverifiable

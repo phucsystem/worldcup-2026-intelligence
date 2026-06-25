@@ -8,24 +8,26 @@ interface Props {
 const SOURCE_LABELS: Record<string, string> = {
   reddit: "Reddit",
   bluesky: "Bluesky",
+  x: "X",
+  news: "News",
 };
 
 function isHttpUrl(url: string): boolean {
   return /^https?:\/\//i.test(url);
 }
 
-// "What fans are saying" — curated public discussion about an upcoming match.
-// Presentational only; all content is auto-curated (lib/api FixtureDetail.
-// social_highlights). Renders nothing when there are no highlights, so there is
-// never an empty shell. Distinct from the model forecast both visually and in
-// labelling — fan opinion, not a prediction.
+// "What people are saying" — curated public discussion (Reddit/X) and news
+// reporting about an upcoming match. Presentational only; all content is
+// auto-curated (lib/api FixtureDetail.social_highlights). Renders nothing when
+// there are no highlights, so there is never an empty shell. Distinct from the
+// model forecast both visually and in labelling — opinion/reporting, not a prediction.
 export default function SocialHighlights({ highlights }: Props) {
   if (highlights.length === 0) return null;
   return (
-    <section className="social-highlights" aria-label="What fans are saying before kickoff">
+    <section className="social-highlights" aria-label="What people are saying before kickoff">
       <div className="sh-head">
-        <h2 className="sh-title">What fans are saying · before kickoff</h2>
-        <span className="sh-tag">Fan discussion · auto-curated</span>
+        <h2 className="sh-title">What people are saying · before kickoff</h2>
+        <span className="sh-tag">Discussion &amp; news · auto-curated</span>
       </div>
       <ul className="sh-list">
         {highlights.map((h, i) => {

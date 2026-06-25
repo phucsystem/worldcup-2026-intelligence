@@ -143,8 +143,9 @@ export interface MatchStat {
 // Mirrors backend app.data.models.PlayerStatus / TeamStatus.
 export interface PlayerStatus {
   player: string;
-  reason: string; // "red-card" | "yellow-accumulation" | "one-yellow"
-  status: "suspended" | "at_risk";
+  // cards: "red-card" | "yellow-accumulation" | "one-yellow"; injuries: free text
+  reason: string;
+  status: "suspended" | "at_risk" | "injured" | "doubtful";
   key_player: boolean;
 }
 
@@ -153,6 +154,7 @@ export interface TeamStatus {
   objective_css: string; // "qualified" | "out" | "contention"
   unavailable: PlayerStatus[];
   at_risk: PlayerStatus[];
+  injured: PlayerStatus[];
 }
 
 // Mirrors backend app.api.fixtures.SocialHighlight — one curated fan comment.
