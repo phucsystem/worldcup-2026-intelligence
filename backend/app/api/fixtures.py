@@ -125,6 +125,26 @@ class SocialHighlight(BaseModel):
     why: Optional[str] = None
 
 
+class MatchLiveWinProb(BaseModel):
+    # Final hybrid live win/draw/loss split (Python base + bounded AI adjustment),
+    # recomputed every poll for an in-play group-stage match. None until then.
+    home: int
+    draw: int
+    away: int
+
+
+class LiveWinProbPoint(BaseModel):
+    # One point on the win-prob swing chart — captured per significant event, not
+    # per poll. `label` names the trigger ("Goal · Brazil", "64'", "KO").
+    minute: int
+    home_pct: int
+    draw_pct: int
+    away_pct: int
+    home_score: int
+    away_score: int
+    label: Optional[str] = None
+
+
 class FixtureDetail(FixtureRow):
     events: list[MatchEvent] = []
     statistics: list[MatchStat] = []
@@ -135,6 +155,14 @@ class FixtureDetail(FixtureRow):
     # none stored. `social_model` names the producing model.
     social_highlights: list[SocialHighlight] = []
     social_model: Optional[str] = None
+    # Hybrid live win-prob + swing-chart history + AI live read, populated on the
+    # live-poll path for in-play group-stage matches; null/empty otherwise. The
+    # internal stored adjustment (live_winprob_adj_json) is NOT exposed — the client
+    # only ever needs the final split.
+    live_winprob: Optional[MatchLiveWinProb] = None
+    live_winprob_history: list[LiveWinProbPoint] = []
+    live_read: Optional[str] = None
+    live_read_model: Optional[str] = None
     # Per-team objective + availability, populated only for non-finished
     # fixtures (preview/live); None on finished fixtures and when a side has
     # nothing to show.
@@ -300,6 +328,36 @@ def normalize_statistics(
             )
         )
     return out
+
+
+def _safe_live_winprob(blob) -> Optional["MatchLiveWinProb"]:
+    """Map a stored live_winprob_json blob to MatchLiveWinProb, degrading a
+    malformed blob to None rather than 500-ing the fixture."""
+    if not blob:
+        return None
+    try:
+        return MatchLiveWinProb(home=blob["home"], draw=blob["draw"], away=blob["away"])
+    except (TypeError, KeyError, ValueError):
+        return None
+
+
+def _safe_live_winprob_history(blob) -> list["LiveWinProbPoint"]:
+    """Map the stored history series to LiveWinProbPoint, dropping any malformed
+    point rather than failing the whole fixture."""
+    if not isinstance(blob, list):
+        return []
+    points: list[LiveWinProbPoint] = []
+    for p in blob:
+        try:
+            points.append(LiveWinProbPoint(
+                minute=p["minute"],
+                home_pct=p["home_pct"], draw_pct=p["draw_pct"], away_pct=p["away_pct"],
+                home_score=p["home_score"], away_score=p["away_score"],
+                label=p.get("label"),
+            ))
+        except (TypeError, KeyError, ValueError, AttributeError):
+            continue
+    return points
 
 
 def select_fixtures_needing_events(matches, existing: set[int]) -> list[int]:
@@ -593,6 +651,10 @@ def get_fixture(fixture_id: int):
         forecast_model = row.forecast_model
         social_json = row.social_json
         social_model = row.social_model
+        live_winprob_json = row.live_winprob_json
+        live_winprob_history_json = row.live_winprob_history_json
+        live_read_text = row.live_read_text
+        live_read_model = row.live_read_model
         home_team, away_team = row.home_team, row.away_team
         # Objective + availability are a pre-match aid: compute them for
         # preview/live fixtures only, never for a finished result.
@@ -616,6 +678,8 @@ def get_fixture(fixture_id: int):
             social_highlights.append(SocialHighlight(**h))
         except (TypeError, ValidationError):
             continue
+    live_winprob = _safe_live_winprob(live_winprob_json)
+    live_winprob_history = _safe_live_winprob_history(live_winprob_history_json)
     return FixtureDetail(
         **base.model_dump(),
         events=events,
@@ -625,6 +689,10 @@ def get_fixture(fixture_id: int):
         forecast=forecast,
         social_highlights=social_highlights,
         social_model=social_model if social_highlights else None,
+        live_winprob=live_winprob,
+        live_winprob_history=live_winprob_history,
+        live_read=live_read_text,
+        live_read_model=live_read_model,
         home_status=home_status,
         away_status=away_status,
     )

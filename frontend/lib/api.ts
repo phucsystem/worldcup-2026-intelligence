@@ -165,6 +165,24 @@ export interface SocialHighlight {
   why: string | null;
 }
 
+// Mirrors backend app.api.fixtures.MatchLiveWinProb — the final hybrid live split.
+export interface LiveWinProb {
+  home: number;
+  draw: number;
+  away: number;
+}
+
+// Mirrors backend app.api.fixtures.LiveWinProbPoint — one swing-chart point.
+export interface LiveWinProbPoint {
+  minute: number;
+  home_pct: number;
+  draw_pct: number;
+  away_pct: number;
+  home_score: number;
+  away_score: number;
+  label?: string | null;
+}
+
 export interface FixtureDetail extends FixtureRow {
   events: MatchEvent[];
   statistics: MatchStat[];
@@ -173,6 +191,10 @@ export interface FixtureDetail extends FixtureRow {
   forecast: Forecast | null;
   social_highlights: SocialHighlight[];
   social_model: string | null;
+  live_winprob?: LiveWinProb | null;
+  live_winprob_history?: LiveWinProbPoint[];
+  live_read?: string | null;
+  live_read_model?: string | null;
   home_status: TeamStatus | null;
   away_status: TeamStatus | null;
 }

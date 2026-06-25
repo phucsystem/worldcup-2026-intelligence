@@ -39,6 +39,12 @@ matches_table = sa.Table(
     sa.Column("social_json", sa.JSON),
     sa.Column("social_model", sa.String),
     sa.Column("stage", sa.String),
+    sa.Column("live_winprob_json", sa.JSON),
+    sa.Column("live_winprob_adj_json", sa.JSON),
+    sa.Column("live_winprob_history_json", sa.JSON),
+    sa.Column("live_read_text", sa.Text),
+    sa.Column("live_read_model", sa.String),
+    sa.Column("live_read_sig", sa.String),
     sa.Column("updated_at", sa.DateTime(timezone=True)),
 )
 
@@ -257,6 +263,26 @@ def upsert_matches(session: Session, matches: list[Match]) -> None:
             set_["social_json"] = m.social_json
             values["social_model"] = m.social_model
             set_["social_model"] = m.social_model
+        # Live win-prob final split + history are recomputed every poll (like the
+        # live statistics_json path), so they overwrite whenever the payload carries
+        # them. The agent's bounded adjustment + the live-read fields are keep-last-
+        # good — only Phase 3's agent writes them, on a significant-event change.
+        if m.live_winprob_json is not None:
+            values["live_winprob_json"] = m.live_winprob_json
+            set_["live_winprob_json"] = m.live_winprob_json
+        if m.live_winprob_history_json is not None:
+            values["live_winprob_history_json"] = m.live_winprob_history_json
+            set_["live_winprob_history_json"] = m.live_winprob_history_json
+        if m.live_winprob_adj_json is not None:
+            values["live_winprob_adj_json"] = m.live_winprob_adj_json
+            set_["live_winprob_adj_json"] = m.live_winprob_adj_json
+        if m.live_read_text:
+            values["live_read_text"] = m.live_read_text
+            set_["live_read_text"] = m.live_read_text
+            values["live_read_model"] = m.live_read_model
+            set_["live_read_model"] = m.live_read_model
+            values["live_read_sig"] = m.live_read_sig
+            set_["live_read_sig"] = m.live_read_sig
         stmt = (
             pg_insert(matches_table)
             .values(**values)
@@ -264,6 +290,35 @@ def upsert_matches(session: Session, matches: list[Match]) -> None:
         )
         session.execute(stmt)
     session.commit()
+
+
+def latest_standings_for_group(session: Session, group_name: str) -> list[StandingRow]:
+    """The most recent stored standings snapshot for one group, as StandingRow.
+    Empty when the group has no snapshot yet (degrade, don't fail). Read-only; used
+    by the live win-prob agent to ground form/qualification facts."""
+    if not group_name:
+        return []
+    latest_date = session.execute(
+        sa.select(sa.func.max(standings_table.c.snapshot_date)).where(
+            standings_table.c.group_name == group_name
+        )
+    ).scalar()
+    if latest_date is None:
+        return []
+    rows = session.execute(
+        sa.select(standings_table)
+        .where(standings_table.c.group_name == group_name)
+        .where(standings_table.c.snapshot_date == latest_date)
+    ).mappings().all()
+    return [
+        StandingRow(
+            group_name=r["group_name"], team=r["team"], played=r["played"],
+            won=r["won"], drawn=r["drawn"], lost=r["lost"], gf=r["gf"], ga=r["ga"],
+            gd=r["gd"], points=r["points"], position=r["position"],
+            prev_position=r["prev_position"], qualification=r["qualification"],
+        )
+        for r in rows
+    ]
 
 
 def upsert_standings_snapshot(
