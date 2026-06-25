@@ -2,6 +2,10 @@
 
 What's shipping on the World Cup 2026 Intelligence platform. Newest first, grouped by release date.
 
+## 26 Jun 2026
+
+- **Improved** — The supporter feedback chat now opens itself once, a moment after your first page finishes loading, so it's easy to find and share a thought — then stays out of the way on later visits.
+
 ## 25 Jun 2026
 
 - **Improved** — Sharing any page now produces a proper link preview (title, description, and image) on social and chat, and the site is far easier for search engines to find: every section and match page has a unique, descriptive title, plus a sitemap and robots file so pages get discovered and indexed.
