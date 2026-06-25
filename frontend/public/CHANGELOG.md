@@ -2,6 +2,10 @@
 
 What's shipping on the World Cup 2026 Intelligence platform. Newest first, grouped by release date.
 
+## 26 Jun 2026
+
+- **Fixed** — Live match pages now reliably show the live win-probability and the AI "Live read." A routine score refresh during a match was wiping each in-play game's group, which silently switched those live insights off mid-match; the group is now preserved so they keep updating to full time.
+
 ## 25 Jun 2026
 
 - **Added** — The upcoming-match discussion panel now blends in **news reporting** alongside fan posts and is retitled "What people are saying." News headlines come from RSS/Atom feeds listed in an editable config file, are matched to the two teams, and pass through the same AI relevance + safety curation as the social posts (with a link back to each source). The forecast is still untouched — opinion and reporting never feed the model.

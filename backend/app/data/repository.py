@@ -223,7 +223,6 @@ def upsert_matches(session: Session, matches: list[Match]) -> None:
     for m in matches:
         values = dict(
             fixture_id=m.fixture_id,
-            group_name=m.group_name,
             home_team=m.home_team,
             away_team=m.away_team,
             home_score=m.home_score,
@@ -236,6 +235,13 @@ def upsert_matches(session: Session, matches: list[Match]) -> None:
         )
         set_ = dict(values)
         set_.pop("fixture_id")
+        # group_name: keep-last-good. Only the daily collect assigns it from the
+        # standings team->group map; live-poll payloads always carry None, so
+        # writing it unconditionally would null an in-play match's group and
+        # silently disable the live win-prob/read path (gated on a set group_name).
+        if m.group_name is not None:
+            values["group_name"] = m.group_name
+            set_["group_name"] = m.group_name
         # Only write events_json when this payload actually carries events. The
         # daily collect fetches fixtures without events, so writing m.events
         # unconditionally would clobber events stored by the live poller/backfill.
