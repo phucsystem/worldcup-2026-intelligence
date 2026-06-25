@@ -337,3 +337,23 @@ class TestUpsertLiveWinProbColumns:
         ).mappings().first()
         assert row["live_winprob_json"] == {"home": 60, "draw": 22, "away": 18}  # overwritten
         assert row["live_read_text"] == "Early read."  # keep-last-good, not clobbered
+
+    def test_group_name_not_clobbered_by_none_payload(self, sqlite_session):
+        # The daily collect assigns group_name; the live poller's payloads carry
+        # None. A None payload must NOT null the stored group — otherwise the live
+        # win-prob/read path (gated on group_name) silently disables mid-match.
+        repo.upsert_matches(sqlite_session, [_match(1, group_name="A")])
+        repo.upsert_matches(sqlite_session, [_match(1, group_name=None)])  # a live poll
+        row = sqlite_session.execute(
+            sa.select(repo.matches_table).where(repo.matches_table.c.fixture_id == 1)
+        ).mappings().first()
+        assert row["group_name"] == "A"  # keep-last-good, not clobbered to NULL
+
+    def test_group_name_updates_when_payload_carries_it(self, sqlite_session):
+        # A real group_name in the payload still updates (e.g. a corrected mapping).
+        repo.upsert_matches(sqlite_session, [_match(1, group_name="A")])
+        repo.upsert_matches(sqlite_session, [_match(1, group_name="B")])
+        row = sqlite_session.execute(
+            sa.select(repo.matches_table).where(repo.matches_table.c.fixture_id == 1)
+        ).mappings().first()
+        assert row["group_name"] == "B"
