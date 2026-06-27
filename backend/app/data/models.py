@@ -49,6 +49,9 @@ class Match(BaseModel):
     # API-Football /injuries records for THIS fixture ({"players": [...]}), refreshed
     # each collect for upcoming fixtures; None until then / on plans without coverage.
     injuries_json: Optional[dict] = None
+    # Which forecast pipeline produced the stored forecast: 'group' for group-stage
+    # matches, 'ko' for knockout matches, None when no forecast has been stored.
+    forecast_kind: Optional[str] = None
 
 
 class StandingRow(BaseModel):

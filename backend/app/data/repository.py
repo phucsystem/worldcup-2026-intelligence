@@ -46,6 +46,7 @@ matches_table = sa.Table(
     sa.Column("live_read_model", sa.String),
     sa.Column("live_read_sig", sa.String),
     sa.Column("injuries_json", sa.JSON),
+    sa.Column("forecast_kind", sa.String),
     sa.Column("updated_at", sa.DateTime(timezone=True)),
 )
 
@@ -263,6 +264,8 @@ def upsert_matches(session: Session, matches: list[Match]) -> None:
             set_["forecast_json"] = m.forecast_json
             values["forecast_model"] = m.forecast_model
             set_["forecast_model"] = m.forecast_model
+            values["forecast_kind"] = m.forecast_kind
+            set_["forecast_kind"] = m.forecast_kind
         # Same clobber-guard for social highlights: only overwrite when this
         # payload carries them, so an empty/failed daily curation keeps last-good.
         if m.social_json:

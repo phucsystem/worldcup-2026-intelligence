@@ -509,16 +509,125 @@ def backfill_finished_verdicts(session_factory, matches: list, group_tables: dic
     return len(to_store)
 
 
+def _find_team_row_across_groups(group_tables: dict, team: str):
+    """Search all groups for a team's StandingRow. Returns the first match or None."""
+    for rows in group_tables.values():
+        for r in rows:
+            if r.team == team:
+                return r
+    return None
+
+
+def _build_forecast_signals(
+    session,
+    home_team: str,
+    away_team: str,
+    injuries_json,
+    matches: list,
+    home_row=None,
+    away_row=None,
+) -> dict:
+    """Assemble the enrichment signals dict for one match. Returns a dict with
+    "home" and "away" keys — each containing whichever signals are available.
+    Never raises; missing sources produce absent keys rather than fabricated data."""
+    from app.data.fifa_rankings import get_fifa_rank
+    from app.data.marquee_players import get_marquee_players
+    from app.data.repository import top_scorers_table
+    from app.pipeline.forecast_signals import (
+        build_form_signal,
+        build_injury_signal,
+        build_strength_signal,
+    )
+
+    # Top scorers keyed by team from DB
+    try:
+        scorer_rows = session.execute(select(top_scorers_table)).mappings().all()
+    except Exception:
+        scorer_rows = []
+
+    from app.data.models import TopScorer
+    scorers_by_team: dict[str, list] = {}
+    for row in scorer_rows:
+        team = row.get("team")
+        if not team:
+            continue
+        ts = TopScorer(
+            player_id=row["player_id"],
+            name=row["name"],
+            team=team,
+            goals=row.get("goals") or 0,
+        )
+        scorers_by_team.setdefault(team, []).append(ts)
+
+    # Recent finished matches (from the in-memory list — already fetched this run)
+    _FINISHED = {"FT", "AET", "PEN"}
+
+    def finished_for(team: str) -> list[dict]:
+        result = []
+        for m in matches:
+            if (m.status or "").strip().upper() not in _FINISHED:
+                continue
+            if m.home_team != team and m.away_team != team:
+                continue
+            result.append({
+                "home_team": m.home_team,
+                "away_team": m.away_team,
+                "home_score": m.home_score,
+                "away_score": m.away_score,
+                "status": m.status,
+            })
+        return result
+
+    def team_signal(team: str, standing_row) -> dict:
+        sig: dict = {}
+        inj = build_injury_signal(injuries_json, team)
+        if inj:
+            sig["injuries"] = inj
+        form = build_form_signal(finished_for(team), team)
+        if form:
+            sig["form"] = form["form"]
+        strength = build_strength_signal(
+            team,
+            fifa_rank=get_fifa_rank(team),
+            standing_row=standing_row,
+            top_scorers=scorers_by_team.get(team, []),
+            marquee_players=get_marquee_players(team),
+        )
+        if strength:
+            sig["strength"] = strength
+        return sig
+
+    return {
+        "home": team_signal(home_team, home_row),
+        "away": team_signal(away_team, away_row),
+    }
+
+
+def _signals_or_none(signals: dict) -> dict | None:
+    """Return signals dict only when at least one side has content, else None."""
+    if any(signals.get(side) for side in ("home", "away")):
+        return signals
+    return None
+
+
 def backfill_forecasts(session_factory, matches: list, group_tables: dict) -> int:
-    """Generate + store a pre-kickoff forecast once for each group-stage match that
-    has none yet. Keep-last-good: a failed/empty generation never overwrites a
+    """Generate + store a pre-kickoff forecast for group-stage and knockout matches
+    that have none yet. Keep-last-good: a failed/empty generation never overwrites a
     stored forecast. Any failure is logged and skipped — never aborts the collect.
     Skipped entirely when no DEEPSEEK_API_KEY is configured. Returns the count
-    stored."""
+    stored.
+
+    Group-stage matches use each team's row from their shared group. Knockout
+    matches resolve each team's final group-stage row by searching across all
+    groups; if either team's row can't be found, that match is skipped gracefully."""
     if not settings.DEEPSEEK_API_KEY:
         return 0
     from app.api.fixtures import select_fixtures_needing_forecast
-    from app.pipeline.forecast import build_match_forecast_facts, generate_match_forecast
+    from app.pipeline.forecast import (
+        build_ko_forecast_facts,
+        build_match_forecast_facts,
+        generate_match_forecast,
+    )
 
     with session_factory() as session:
         existing = {
@@ -528,33 +637,98 @@ def backfill_forecasts(session_factory, matches: list, group_tables: dict) -> in
             ).all()
             if forecast
         }
-    needing = set(select_fixtures_needing_forecast(matches, existing))
-    if not needing:
+
+    # Group-stage candidates (have group_name) + knockout candidates (no group_name).
+    # select_fixtures_needing_forecast only returns group-stage matches, so we build
+    # the KO candidate list separately.
+    group_needing = set(select_fixtures_needing_forecast(matches, existing))
+    ko_needing = {
+        m.fixture_id
+        for m in matches
+        if m.fixture_id not in existing and not m.group_name
+    }
+
+    if not group_needing and not ko_needing:
         return 0
+
     to_store = []
     for m in matches:
-        if m.fixture_id not in needing:
-            continue
-        rows = group_tables.get(m.group_name or "", [])
-        home_row = next((r for r in rows if r.team == m.home_team), None)
-        away_row = next((r for r in rows if r.team == m.away_team), None)
-        facts = build_match_forecast_facts(
-            home_team=m.home_team,
-            away_team=m.away_team,
-            home_row=home_row,
-            away_row=away_row,
-            group_name=m.group_name,
-        )
-        if facts is None:
-            continue
-        try:
-            result = generate_match_forecast(facts)
-        except Exception as exc:
-            log.warning("Forecast generation failed for %s: %s", m.fixture_id, exc)
-            continue
-        if result:
-            m.forecast_json, m.forecast_model = result
-            to_store.append(m)
+        if m.fixture_id in group_needing:
+            rows = group_tables.get(m.group_name or "", [])
+            home_row = next((r for r in rows if r.team == m.home_team), None)
+            away_row = next((r for r in rows if r.team == m.away_team), None)
+            try:
+                with session_factory() as session:
+                    raw_signals = _build_forecast_signals(
+                        session, m.home_team or "", m.away_team or "",
+                        m.injuries_json, matches,
+                        home_row=home_row, away_row=away_row,
+                    )
+                signals = _signals_or_none(raw_signals)
+            except Exception as exc:
+                log.warning("Signal assembly failed for %s: %s", m.fixture_id, exc)
+                signals = None
+            facts = build_match_forecast_facts(
+                home_team=m.home_team,
+                away_team=m.away_team,
+                home_row=home_row,
+                away_row=away_row,
+                group_name=m.group_name,
+                signals=signals,
+            )
+            if facts is None:
+                continue
+            try:
+                result = generate_match_forecast(facts, prompt_variant="group")
+            except Exception as exc:
+                log.warning("Forecast generation failed for %s: %s", m.fixture_id, exc)
+                continue
+            if result:
+                m.forecast_json, m.forecast_model = result
+                m.forecast_kind = "group"
+                to_store.append(m)
+
+        elif m.fixture_id in ko_needing:
+            home_row = _find_team_row_across_groups(group_tables, m.home_team or "")
+            away_row = _find_team_row_across_groups(group_tables, m.away_team or "")
+            if home_row is None or away_row is None:
+                log.info(
+                    "KO forecast skipped for fixture %s: group row missing "
+                    "(home=%s found=%s, away=%s found=%s)",
+                    m.fixture_id, m.home_team, home_row is not None,
+                    m.away_team, away_row is not None,
+                )
+                continue
+            try:
+                with session_factory() as session:
+                    raw_signals = _build_forecast_signals(
+                        session, m.home_team or "", m.away_team or "",
+                        m.injuries_json, matches,
+                        home_row=home_row, away_row=away_row,
+                    )
+                signals = _signals_or_none(raw_signals)
+            except Exception as exc:
+                log.warning("Signal assembly failed for KO %s: %s", m.fixture_id, exc)
+                signals = None
+            facts = build_ko_forecast_facts(
+                home_team=m.home_team,
+                away_team=m.away_team,
+                home_row=home_row,
+                away_row=away_row,
+                signals=signals,
+            )
+            if facts is None:
+                continue
+            try:
+                result = generate_match_forecast(facts, prompt_variant="ko")
+            except Exception as exc:
+                log.warning("KO forecast generation failed for %s: %s", m.fixture_id, exc)
+                continue
+            if result:
+                m.forecast_json, m.forecast_model = result
+                m.forecast_kind = "ko"
+                to_store.append(m)
+
     if to_store:
         with session_factory() as session:
             upsert_matches(session, to_store)

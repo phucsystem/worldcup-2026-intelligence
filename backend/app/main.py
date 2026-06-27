@@ -9,6 +9,7 @@ from app.api.admin import router as admin_router
 from app.api.briefs import router as briefs_router
 from app.api.feedback import router as feedback_router
 from app.api.fixtures import router as fixtures_router, stars_router
+from app.api.forecast_accuracy import router as forecast_accuracy_router
 from app.api.logs import router as logs_router
 from app.api.results import router as results_router
 from app.api.standings import router as standings_router
@@ -51,6 +52,7 @@ app.include_router(standings_router)
 app.include_router(results_router)
 app.include_router(fixtures_router)
 app.include_router(stars_router)
+app.include_router(forecast_accuracy_router)
 app.include_router(tournament_router)
 app.include_router(logs_router)
 app.include_router(feedback_router)
