@@ -62,21 +62,58 @@ def build_match_forecast_facts(
     home_row,
     away_row,
     group_name: Optional[str],
+    signals: Optional[dict] = None,
 ) -> Optional[dict]:
     """Compact, deterministic fact bundle for one upcoming match, or None when
     either side lacks a standings row (nothing to ground a forecast on).
-    `home_row`/`away_row` are the teams' StandingRow from the match's group."""
+    `home_row`/`away_row` are the teams' StandingRow from the match's group.
+    `signals` is an optional dict (e.g. {"home": {...}, "away": {...}}) merged
+    under the "signals" key — absent when None so nothing is fabricated."""
     home = _standings_facts(home_row)
     away = _standings_facts(away_row)
     if home is None or away is None:
         return None
-    return {
+    facts: dict = {
         "group_name": group_name,
         "home_team": home_team,
         "away_team": away_team,
         "home_standings": home,
         "away_standings": away,
     }
+    if signals is not None:
+        facts["signals"] = signals
+    return facts
+
+
+def build_ko_forecast_facts(
+    *,
+    home_team: Optional[str],
+    away_team: Optional[str],
+    home_row,
+    away_row,
+    signals: Optional[dict] = None,
+) -> Optional[dict]:
+    """Fact bundle for one upcoming knockout match, or None when either side
+    lacks a final group-stage StandingRow. Mirrors build_match_forecast_facts
+    but carries no group_name (KO matches don't belong to a single group) and
+    marks match_type='knockout' so the prompt knows the context."""
+    home = _standings_facts(home_row)
+    away = _standings_facts(away_row)
+    if home is None or away is None:
+        return None
+    # Attach each team's source group so the model can cite it as a fact.
+    home["team_group"] = getattr(home_row, "group_name", None)
+    away["team_group"] = getattr(away_row, "group_name", None)
+    facts: dict = {
+        "match_type": "knockout",
+        "home_team": home_team,
+        "away_team": away_team,
+        "home_standings": home,
+        "away_standings": away,
+    }
+    if signals is not None:
+        facts["signals"] = signals
+    return facts
 
 
 def _normalize_pcts(home: int, draw: int, away: int) -> tuple[int, int, int]:
@@ -93,22 +130,34 @@ def _normalize_pcts(home: int, draw: int, away: int) -> tuple[int, int, int]:
     return vals[0], vals[1], vals[2]
 
 
-def generate_match_forecast(facts: dict) -> Optional[tuple[dict, str]]:
+def generate_match_forecast(
+    facts: dict,
+    prompt_variant: Literal["group", "ko"] = "group",
+) -> Optional[tuple[dict, str]]:
     """Generate the forecast from a fact bundle. Returns (forecast_dict, model)
     on success or None on any failure / empty output — the caller treats None as
     keep-last-good (no write). Mirrors the verdict's retry-twice pattern. The
     returned dict matches the frontend Forecast shape (home_pct/draw_pct/away_pct
-    + factors[{name, lean, why}])."""
-    from app.llm.deepseek import make_structured_client
-    from app.pipeline.prompts import FORECAST_SYSTEM, FORECAST_USER
+    + factors[{name, lean, why}]).
 
-    user_msg = FORECAST_USER.format(facts_json=json.dumps(facts, indent=2, default=str))
+    `prompt_variant` selects the system+user prompt pair: 'group' for group-stage
+    matches (default, backward-compatible), 'ko' for knockout matches."""
+    from app.llm.deepseek import make_structured_client
+
+    if prompt_variant == "ko":
+        from app.pipeline.prompts import KO_FORECAST_SYSTEM as system_prompt
+        from app.pipeline.prompts import KO_FORECAST_USER as user_template
+    else:
+        from app.pipeline.prompts import FORECAST_SYSTEM as system_prompt
+        from app.pipeline.prompts import FORECAST_USER as user_template
+
+    user_msg = user_template.format(facts_json=json.dumps(facts, indent=2, default=str))
     client = make_structured_client(MatchForecast)
 
     for _ in range(2):
         try:
             result: dict[str, Any] = client.invoke([
-                {"role": "system", "content": FORECAST_SYSTEM},
+                {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_msg},
             ])
             parsed: MatchForecast = result["parsed"]

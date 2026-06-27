@@ -1,0 +1,61 @@
+# Approximate FIFA world-ranking snapshot, pre-tournament 2026. Used as a
+# strength prior for the forecast — approximate ordering only, not an oracle.
+from typing import Optional
+
+_RANKINGS: dict[str, int] = {
+    "Argentina": 1,
+    "France": 2,
+    "Spain": 3,
+    "England": 4,
+    "Brazil": 5,
+    "Portugal": 6,
+    "Netherlands": 7,
+    "Belgium": 8,
+    "Germany": 9,
+    "Colombia": 10,
+    "Italy": 11,
+    "Morocco": 12,
+    "Uruguay": 13,
+    "USA": 14,
+    "Croatia": 15,
+    "Japan": 16,
+    "Mexico": 17,
+    "Switzerland": 18,
+    "Senegal": 19,
+    "Austria": 20,
+    "South Korea": 21,
+    "Türkiye": 22,
+    "Ecuador": 23,
+    "Sweden": 24,
+    "Norway": 25,
+    "Czechia": 26,
+    "Iran": 27,
+    "Australia": 28,
+    "Canada": 29,
+    "Ghana": 30,
+    "Scotland": 31,
+    "Algeria": 32,
+    "Ivory Coast": 33,
+    "Tunisia": 34,
+    "Paraguay": 35,
+    "Saudi Arabia": 36,
+    "Serbia": 37,
+    "Uzbekistan": 38,
+    "South Africa": 39,
+    "Egypt": 40,
+    "Panama": 41,
+    "Jordan": 42,
+    "Bosnia & Herzegovina": 43,
+    "Iraq": 44,
+    "New Zealand": 45,
+    "Qatar": 46,
+    "Congo DR": 47,
+    "Cape Verde Islands": 48,
+    "Curaçao": 49,
+    "Haiti": 50,
+}
+
+
+def get_fifa_rank(team: str) -> Optional[int]:
+    """Return approximate FIFA ranking position for `team`, or None if unknown."""
+    return _RANKINGS.get(team)

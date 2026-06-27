@@ -4,6 +4,9 @@ What's shipping on the World Cup 2026 Intelligence platform. Newest first, group
 
 ## 28 Jun 2026
 
+- **New** — Match forecasts now cover the knockout rounds too, not just the group stage — so every upcoming game (Round of 32 onward) gets a win/draw/win prediction with reasoning.
+- **Improved** — Forecasts now weigh far more than the league table: world ranking, scoring rate, recent form, key absences (injuries/suspensions), and standout players — including famous names who haven't scored yet — for sharper, better-reasoned predictions.
+- **Improved** — Forecasts no longer shy away from calling draws when teams are evenly matched, fixing a bias that previously missed too many drawn games.
 - **Changed** — The home "Up next" strip now shows every game from today's matchday (or the next match day, if today has none) instead of spilling the next two days together — so "today's games" means exactly that.
 - **Fixed** — An open home page now switches a match from "Up next" to the live view on its own the moment it kicks off, instead of leaving a started game shown as upcoming with a stuck countdown until you reload.
 
