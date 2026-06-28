@@ -45,7 +45,7 @@ export default function KnockoutBracket({ bracket }: { bracket: Bracket }) {
     return (
       <EmptyState
         message="The knockout bracket fills in once the group stage concludes"
-        subtext="Round of 16 → Final will appear here"
+        subtext="Round of 32 → Final will appear here"
       />
     );
   }

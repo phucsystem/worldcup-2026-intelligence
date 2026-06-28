@@ -47,6 +47,7 @@ LOGOS = {"France": "https://img/fr.png", "Brazil": "https://img/br.png"}
 
 class TestIsKnockoutStage:
     def test_recognises_known_rounds_case_insensitive(self):
+        assert is_knockout_stage("Round of 32")  # 2026 first knockout round (48 teams)
         assert is_knockout_stage("Round of 16")
         assert is_knockout_stage("round of 16")
         assert is_knockout_stage("Final")
@@ -151,9 +152,15 @@ class TestShapeKnockout:
             _match(1, "A", "B", _dt(2026, 7, 10), stage="Final"),
             _match(2, "C", "D", _dt(2026, 7, 1), stage="Round of 16"),
             _match(3, "E", "F", _dt(2026, 7, 5), stage="Semi-finals"),
+            _match(4, "G", "H", _dt(2026, 6, 28), stage="Round of 32"),
         ]
         out = shape_knockout(rows, LOGOS)
-        assert [r.round for r in out.rounds] == ["Round of 16", "Semi-finals", "Final"]
+        assert [r.round for r in out.rounds] == [
+            "Round of 32",
+            "Round of 16",
+            "Semi-finals",
+            "Final",
+        ]
 
     def test_groups_multiple_ties_per_round_sorted_by_kickoff(self):
         rows = [

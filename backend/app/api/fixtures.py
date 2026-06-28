@@ -31,6 +31,7 @@ _engine = None
 # Knockout rounds in bracket order. Matching is case-insensitive on the raw
 # API-Football `round` string; anything unrecognised sorts after these.
 KNOCKOUT_ROUND_ORDER = [
+    "Round of 32",
     "Round of 16",
     "Quarter-finals",
     "Semi-finals",
