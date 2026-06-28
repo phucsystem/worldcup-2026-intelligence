@@ -39,38 +39,6 @@ export default async function StandingsPage() {
         )}
       </div>
 
-      {/* Knockout toggle — empty-stated stub until knockout data exists */}
-      <div className="flex gap-2 mb-8" role="tablist" aria-label="View toggle">
-        <button
-          role="tab"
-          aria-selected="true"
-          className="px-4 py-2 text-sm font-semibold rounded-full"
-          style={{
-            backgroundColor: "#2D6BF6",
-            color: "#FFFFFF",
-            border: "none",
-            cursor: "default",
-          }}
-        >
-          Groups
-        </button>
-        <button
-          role="tab"
-          aria-selected="false"
-          aria-disabled="true"
-          className="px-4 py-2 text-sm font-medium rounded-full"
-          style={{
-            backgroundColor: "#0A1B3D",
-            color: "#6B7A9E",
-            border: "1px solid #1E3157",
-            cursor: "not-allowed",
-          }}
-          title="Available once knockout stage begins"
-        >
-          Knockout
-        </button>
-      </div>
-
       {!snapshot || snapshot.groups.length === 0 ? (
         <EmptyState
           message="Standings will appear once match data is available."

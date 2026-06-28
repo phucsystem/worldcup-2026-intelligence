@@ -2,6 +2,13 @@
 
 What's shipping on the World Cup 2026 Intelligence platform. Newest first, grouped by release date.
 
+## 29 Jun 2026
+
+- **New** — The Knockout bracket now **highlights each winner's path** — the connector lines light up as ties finish, tracing every advancing team's route toward the Final.
+- **Changed** — Renamed the **Fixtures** tab to **Matches**.
+- **Changed** — Streamlined the top navigation: **Knockout** now takes the primary slot and the standalone Standings page is retired from the menu. Group standings still appear on the home page and on each match page.
+- **New** — A dedicated **Knockout** page in the top navigation shows the full Round of 32 → Final bracket as a connected tree. Every round is visible from the start — later rounds shown as placeholders — and winners advance into the next round automatically as each game finishes, so you can follow the path to the Final end to end. The bracket is no longer duplicated inside Standings and Fixtures.
+
 ## 28 Jun 2026
 
 - **Fixed** — A match that has kicked off now shows its live view and live scoreline — on the match page, the shared/preview image, and link titles — instead of an "upcoming / VS" card during the first minutes before the live status has fully updated.
