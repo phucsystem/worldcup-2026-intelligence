@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { SITE } from "@/lib/site";
 import { listBriefs, getAllResults, getUpcomingFixtures } from "@/lib/api";
 
-const STATIC_PATHS = ["", "/standings", "/results", "/fixtures", "/archive", "/changelog"];
+const STATIC_PATHS = ["", "/knockout", "/results", "/fixtures", "/archive", "/changelog"];
 
 // Dynamic content is best-effort: a failed fetch must not break sitemap generation,
 // it just yields a smaller sitemap that the next crawl will fill in.
