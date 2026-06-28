@@ -8,6 +8,7 @@ import MatchStats from "@/components/match-stats";
 import MatchBanner from "@/components/match-banner";
 import LiveWinProb from "@/components/live-winprob";
 import LiveWinProbChart from "@/components/live-winprob-chart";
+import ForecastVsReality from "@/components/forecast-vs-reality";
 import { liveMinute } from "@/lib/live";
 import { eventKey, freshEventKeys } from "@/lib/match";
 
@@ -138,6 +139,23 @@ export default function MatchLive({ initial, formSlot, stakesSlot, teamStatusSlo
           minute={minute}
           redCards={countReds(fixture.events)}
         />
+      ) : null}
+
+      {fixture.forecast ? (
+        <>
+          <h2 className="section-title">Forecast vs Reality</h2>
+          <ForecastVsReality
+            forecast={fixture.forecast}
+            forecastSignals={fixture.forecast_signals ?? null}
+            homeScore={fixture.home_score}
+            awayScore={fixture.away_score}
+            elapsed={minute}
+            homeTeam={homeTeam}
+            awayTeam={awayTeam}
+            statistics={fixture.statistics}
+            liveRead={fixture.live_read ?? null}
+          />
+        </>
       ) : null}
 
       {fixture.forecast && fixture.forecast.factors.length > 0 ? (
