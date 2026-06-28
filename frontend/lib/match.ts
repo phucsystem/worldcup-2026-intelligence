@@ -18,6 +18,19 @@ export function matchState(status: string | null): MatchStateName {
   return "preview";
 }
 
+export function hasKickedOff(kickoffUtc: string | null): boolean {
+  if (!kickoffUtc) return false;
+  const t = Date.parse(kickoffUtc);
+  return Number.isFinite(t) && t <= Date.now();
+}
+
+// Like matchState but treats a kicked-off NS match (poller lag) as "live".
+export function effectiveMatchState(status: string | null, kickoffUtc: string | null): MatchStateName {
+  const state = matchState(status);
+  if (state === "preview" && hasKickedOff(kickoffUtc)) return "live";
+  return state;
+}
+
 export interface TimelineRow {
   minute: number;
   extra: number | null;

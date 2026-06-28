@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   matchState,
+  hasKickedOff,
+  effectiveMatchState,
   buildTimeline,
   goalscorers,
   subOnOff,
@@ -41,6 +43,47 @@ describe("matchState", () => {
     for (const s of ["FT", "AET", "PEN"]) {
       expect(matchState(s)).toBe("finished");
     }
+  });
+});
+
+describe("hasKickedOff", () => {
+  it("returns true for a past kickoff", () => {
+    const past = new Date(Date.now() - 60_000).toISOString();
+    expect(hasKickedOff(past)).toBe(true);
+  });
+
+  it("returns false for a future kickoff", () => {
+    const future = new Date(Date.now() + 60_000).toISOString();
+    expect(hasKickedOff(future)).toBe(false);
+  });
+
+  it("returns false for null", () => {
+    expect(hasKickedOff(null)).toBe(false);
+  });
+});
+
+describe("effectiveMatchState", () => {
+  it("returns live for an in-play status regardless of kickoff", () => {
+    expect(effectiveMatchState("1H", null)).toBe("live");
+    expect(effectiveMatchState("HT", new Date(Date.now() - 3_600_000).toISOString())).toBe("live");
+  });
+
+  it("returns finished for a finished status", () => {
+    expect(effectiveMatchState("FT", new Date(Date.now() - 7_200_000).toISOString())).toBe("finished");
+  });
+
+  it("returns live for NS with a past kickoff (poller-lag case)", () => {
+    const past = new Date(Date.now() - 5 * 60_000).toISOString();
+    expect(effectiveMatchState("NS", past)).toBe("live");
+  });
+
+  it("returns preview for NS with a future kickoff", () => {
+    const future = new Date(Date.now() + 60 * 60_000).toISOString();
+    expect(effectiveMatchState("NS", future)).toBe("preview");
+  });
+
+  it("returns preview for NS with null kickoff", () => {
+    expect(effectiveMatchState("NS", null)).toBe("preview");
   });
 });
 

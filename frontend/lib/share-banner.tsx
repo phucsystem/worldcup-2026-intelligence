@@ -3,8 +3,7 @@ import { join } from "node:path";
 import type { ReactNode } from "react";
 import type { FixtureDetail } from "@/lib/api";
 import { flagSvg } from "@/lib/flags";
-import { goalscorers } from "@/lib/match";
-import { matchState } from "@/lib/match";
+import { goalscorers, effectiveMatchState } from "@/lib/match";
 import { forecastSegments } from "@/lib/banner";
 import { SITE } from "@/lib/site";
 
@@ -38,28 +37,14 @@ export async function loadShareFonts() {
   ];
 }
 
-function hasKickedOff(kickoffUtc: string | null): boolean {
-  if (!kickoffUtc) return false;
-  const t = Date.parse(kickoffUtc);
-  return Number.isFinite(t) && t <= Date.now();
-}
-
 export function isLiveFixture(fixture: FixtureDetail): boolean {
-  const state = matchState(fixture.status);
-  if (state === "live") return true;
-  if (state === "finished") return false;
-  // Status hasn't flipped to live yet (poller lag) but kickoff has passed — treat
-  // as live so the share image shows the score layout, not an upcoming "VS" card.
-  return hasKickedOff(fixture.kickoff_utc);
+  return effectiveMatchState(fixture.status, fixture.kickoff_utc) === "live";
 }
 
-// Which banner layout to draw. Only a genuinely upcoming match (status not
-// live/finished AND kickoff still in the future) gets the "VS" preview; a
-// kicked-off match renders the score layout even if its status lags at NS.
+// Which banner layout to draw. Only a genuinely upcoming match gets the "VS"
+// preview; a kicked-off match renders the score layout even if status lags at NS.
 export function shareBannerVariant(fixture: FixtureDetail): "preview" | "result" {
-  return matchState(fixture.status) === "preview" && !isLiveFixture(fixture)
-    ? "preview"
-    : "result";
+  return effectiveMatchState(fixture.status, fixture.kickoff_utc) === "preview" ? "preview" : "result";
 }
 
 // Strict positive-integer id — rejects "5.7", "abc", " 5", "0x10", "1e3" so the
