@@ -29,8 +29,10 @@ log = logging.getLogger(__name__)
 # Fixed, high ids so they never collide with real API-Football fixture ids.
 E2E_FIXTURE_ID = 990001
 # A knockout tie decided on penalties — exercises winner_side advancement and the
-# "(a.e.t.) / pens" result rendering end-to-end.
-E2E_KO_FIXTURE_ID = 990002
+# "(a.e.t.) / pens" result rendering end-to-end. 990002 is taken by the social
+# fixture (seed_social_fixture), which seeds AFTER this one and would otherwise
+# overwrite the penalty row — so this uses 990003.
+E2E_KO_FIXTURE_ID = 990003
 
 
 def _pick_two_teams(session) -> tuple[str, str, str]:

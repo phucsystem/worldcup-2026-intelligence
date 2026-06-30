@@ -28,6 +28,9 @@ Results Page Shows A Penalty-Decided Knockout Result
     ...                capture survive end-to-end.
     Go To                   ${BASE_URL}/results
     Wait For Elements State    .results-widget .match-row    visible    timeout=15s
-    Get Element States      .results-widget .mr-status >> text=Penalties    then    bool(value & visible)
+    # Fail loudly if the penalty row is missing (e.g. a seed id collision),
+    # rather than silently passing through to the count assertion.
+    Wait For Elements State    .results-widget .mr-status >> text=Penalties    visible    timeout=15s
+    Wait For Elements State    .results-widget .mr-pen    visible    timeout=15s
     ${pens}=    Get Element Count    .results-widget .mr-pen
     Should Be True          ${pens} >= 1
